@@ -123,7 +123,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_conclusion
-/* Formatted on 30-mar.-2017 13:58:07 (QP5 v5.126) */
+/* Formatted on 27-abr.-2017 7:33:19 (QP5 v5.126) */
 IS
     FUNCTION devuelve_con_autoinicial (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -215,7 +215,7 @@ IS
                 IF NOT (prm_numero_aisc = doc_con_num
                         AND prm_fecha_notificacion = doc_con_fec)
                 THEN
-                    RETURN 'NO SE PUEDE MODIFICAR EL N&Uacute;MERO O LA FECHA DEL AUTO INICIAL, PORQUE YA FUE REGISTRADO COMO DOCUMENTO DE CONCLUSI&Oacute;N.';
+                    RETURN 'No se puede modificar el n&uacute;mero o la fecha del auto inicial, porque ya fue registrado como documento de conclusi&oacute;n.';
                 END IF;
             END IF;
         END IF;
@@ -255,7 +255,7 @@ IS
 
                 IF existe > 0
                 THEN
-                    RETURN 'El n&uacute;mero de Auto INICIAL DE SUMARIO CONTRAVENCIONAL '
+                    RETURN 'El n&uacute;mero de Auto Inicial de Sumario Contravencional '
                            || prm_numero_aisc
                            || ' se encuentra duplicado en otra orden';
                 ELSE
@@ -331,7 +331,7 @@ IS
                         END IF;
 
                         COMMIT;
-                        RETURN 'CORRECTOSE REGISTRO CORRECTAMENTE EL AUTO INICIAL DE SUMARIO CONTRAVENCIONAL'
+                        RETURN 'CORRECTOSe registr&oacute; correctamente el Auto Inicial de Sumario Contravencional'
 ;
                     ELSE
                         SELECT   COUNT (1)
@@ -405,7 +405,7 @@ IS
                             END IF;
                         END IF;
 
-                        RETURN 'CORRECTOSE MODIFICO CORRECTAMENTE EL AUTO INICIAL DE SUMARIO CONTRAVENCIONAL'
+                        RETURN 'CORRECTOSe modific&oacute;  correctamente el Auto Inicial de Sumario Contravencional'
 ;
                     END IF;
                 END IF;
@@ -423,7 +423,7 @@ IS
 
             IF existe = 0
             THEN
-                RETURN 'NO TIENE REGISTRO DE AUTO INICIAL DE SUMARIO CONTRAVENCIONAL';
+                RETURN 'No tiene registro de Auto Inicial de Sumario Contravencional';
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
@@ -473,10 +473,10 @@ IS
                              a.cas_fecha_informe,
                              a.cas_gerencia_legal
                       FROM   fis_con_autoinicial a
-                      WHERE  ctl_control_id = prm_id AND cas_num = existe;
+                     WHERE   ctl_control_id = prm_id AND cas_num = existe;
 
 
-                RETURN 'CORRECTOSE MODIFIC&Oacute; CORRECTAMENTE EL AUTO INICIAL DE SUMARIO CONTRAVENCIONAL'
+                RETURN 'CORRECTOSe modific&oacute; correctamente el Auto Inicial de Sumario Contravencional'
 ;
             END IF;
         ELSE
@@ -581,7 +581,7 @@ IS
                 IF NOT (prm_numero_ra = doc_con_num
                         AND prm_fecha_ra = doc_con_fec)
                 THEN
-                    RETURN 'NO SE PUEDE MODIFICAR EL N&Uacute;MERO O LA FECHA DE LA RESOLUCI&Oacute;N ADMINISTRATIVA, PORQUE YA FUE REGISTRADA COMO DOCUMENTO DE CONCLUSI&Oacute;N.';
+                    RETURN 'No se puede modificar el n&uacute;mero o la fecha de la resoluci&oacute;n administrativa, porque ya fue registrada como documento de conclusi&oacute;n.';
                 END IF;
             END IF;
         END IF;
@@ -698,7 +698,7 @@ IS
                         END IF;
 
                         COMMIT;
-                        RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA RESOLUCI&Oacute;N ADMINISTRATIVA';
+                        RETURN 'CORRECTOSe registr&oacute; correctamente la Resoluci&oacute;n Administrativa';
                     ELSE
                         SELECT   COUNT (1)
                           INTO   existe
@@ -772,12 +772,12 @@ IS
                             END IF;
                         END IF;
 
-                        RETURN 'CORRECTOSE MODIFIC&Oacute; CORRECTAMENTE LA RESOLUCI&Oacute;N ADMINISTRATIVA';
+                        RETURN 'CORRECTOSe modific&oacute; correctamente la Resoluci&oacute;n Administrativa';
                     END IF;
                 END IF;
             END IF;
         ELSE
-            RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
+            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -885,7 +885,7 @@ IS
                 IF NOT (prm_numero_vc = doc_con_num
                         AND prm_fecha_vc = doc_con_fec)
                 THEN
-                    RETURN 'NO SE PUEDE MODIFICAR EL NUMERO O LA FECHA DE LA VISTA DE CARGO, PORQUE YA FUE REGISTRADA COMO DOCUMENTO DE CONCLUSION.';
+                    RETURN 'No se puede modificar el numero o la fecha de la vista de cargo, porque ya fue registrada como documento de conclusi&oacute;n.';
                 END IF;
             END IF;
         END IF;
@@ -926,7 +926,7 @@ IS
 
                 IF existe > 0
                 THEN
-                    RETURN    'EL NUMERO DE VISTA DE CARGO '
+                    RETURN    'El n&uacute;ero de Vista de Cargo '
                            || prm_numero_vc
                            || ' se encuentra duplicado en otra orden';
                 ELSE
@@ -1014,7 +1014,7 @@ IS
                         END IF;
 
                         COMMIT;
-                        RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA VISTA DE CARGO';
+                        RETURN 'CORRECTOe registr&oacute; correctamente la Vista de Cargo';
                     ELSE
                         SELECT   COUNT (1)
                           INTO   existe
@@ -1099,7 +1099,7 @@ IS
                             END IF;
                         END IF;
 
-                        RETURN 'CORRECTOSE MODIFICO CORRECTAMENTE LA VISTA DE CARGO';
+                        RETURN 'CORRECTOSe modific&oacute; correctamente la Vista de Cargo';
                     END IF;
                 END IF;
             END IF;
@@ -1116,7 +1116,7 @@ IS
 
             IF existe = 0
             THEN
-                RETURN 'NO TIENE REGISTR&Oacute; DE VISTA DE CARGO';
+                RETURN 'No tiene registr&oacute; de Vista de Cargo';
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
@@ -1178,10 +1178,10 @@ IS
                              AND cvc_num = existe
                              AND ROWNUM = 1;
 
-                RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA VISTA DE CARGO';
+                RETURN 'CORRECTOSe registr&oacute; correctamente la Vista de Cargo';
             END IF;
         ELSE
-            RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
+            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -1264,7 +1264,7 @@ IS
                 IF NOT (prm_rd_final = doc_con_num
                         AND prm_fecha_not_rd_final = doc_con_fec)
                 THEN
-                    RETURN 'NO SE PUEDE MODIFICAR EL NUMERO O LA FECHA DE LA RESOLUCI&Oacute;N DETERMINATIVA, PORQUE YA FUE REGISTRADA COMO DOCUMENTO DE CONCLUSI&Oacute;N.';
+                    RETURN 'No se puede modificar el numero o la fecha de la Resoluci&Oacute;N Determinativa, porque ya fue registrada como documento de conclusi&oacute;n.';
                 END IF;
             END IF;
         END IF;
@@ -1362,7 +1362,7 @@ IS
                         END IF;
 
                         COMMIT;
-                        RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA RESOLUCI&Oacute;N DETERMINATIVA FINAL Y SIN VISTA DE CARGO';
+                        RETURN 'CORRECTOSe registr&oacute; correctamente la Resoluci&Oacute;N Determinativa Final y Sin Vista de Cargo';
                     ELSE
                         SELECT   COUNT (1)
                           INTO   existe
@@ -1417,12 +1417,12 @@ IS
                             END IF;
                         END IF;
 
-                        RETURN 'CORRECTOSE MODIFIC&Oacute; CORRECTAMENTE LA RESOLUCI&Oacute;N DETERMINATIVA FINAL Y SIN VISTA DE CARGO';
+                        RETURN 'CORRECTOSe modific&oacute; correctamente la resoluci&oacute;n determinativa final y sin vista de cargo';
                     END IF;
                 END IF;
             END IF;
         ELSE
-            RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
+            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -1534,7 +1534,7 @@ IS
                 IF NOT (prm_acta_interv = doc_con_num
                         AND prm_fecha_acta_interv = doc_con_fec)
                 THEN
-                    RETURN 'NO SE PUEDE MODIFICAR EL NUMERO O LA FECHA DEL ACTA DE INTERVENCION, PORQUE YA FUE REGISTRADA COMO DOCUMENTO DE CONCLUSION.';
+                    RETURN 'No se puede modificar el numero o la fecha del Acta de Intervenci&oacute;n, porque ya fue registrada como documento de conclusi&oacute;n.';
                 END IF;
             END IF;
         END IF;
@@ -1666,7 +1666,7 @@ IS
                         END IF;
 
                         COMMIT;
-                        RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA ACTA DE INTERVENCION';
+                        RETURN 'CORRECTOSe registr&oacute; correctamente la Acta de Intervenci&oacute;n';
                     ELSE
                         SELECT   COUNT (1)
                           INTO   existe
@@ -1754,7 +1754,7 @@ IS
                             END IF;
                         END IF;
 
-                        RETURN 'CORRECTOSE MODIFICO CORRECTAMENTE LA ACTA DE INTERVENCION';
+                        RETURN 'CORRECTOSe modific&oacute; correctamente la Acta de Intervenci&oacute;n';
                     END IF;
                 END IF;
             END IF;
@@ -1771,7 +1771,7 @@ IS
 
             IF existe = 0
             THEN
-                RETURN 'NO TIENE REGISTR&Oacute; DE ACTA DE INTERVENCION';
+                RETURN 'No tiene registr&oacute; de Acta de Intervenci&oacute;n';
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
@@ -1835,10 +1835,10 @@ IS
                              AND cai_num = existe
                              AND ROWNUM = 1;
 
-                RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA ACTA DE INTERVENCION';
+                RETURN 'CORRECTOSe registr&oacute; correctamente la Acta de Intervenci&oacute;n';
             END IF;
         ELSE
-            RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
+            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -1933,7 +1933,7 @@ IS
 
             IF existe = 0
             THEN
-                RETURN 'EL CONTROL NO ESTA EN ESTADO REGISTRADO';
+                RETURN 'El control no est&aacute; en estado registrado';
             END IF;
 
             SELECT   COUNT (1)
@@ -1968,7 +1968,7 @@ IS
 
                 IF existe = 0
                 THEN
-                    RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DE LA VISTA DE CARGO REGISTRADA';
+                    RETURN 'Debe completar el llenado de la informaci&oacute;n de la Vista de Cargo registrada';
                 END IF;
             END IF;
 
@@ -1997,7 +1997,7 @@ IS
 
                 IF existe = 0
                 THEN
-                    RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DE LA RESOLUCI&Oacute;N DETERMINATIVA FINAL SIN VISTA DE CARGO REGISTRADA';
+                    RETURN 'Debe completar el llenado de la informaci&oacute;n de la resoluci&oacute;n determinativa final sin vista de cargo registrada';
                 END IF;
             END IF;
 
@@ -2039,7 +2039,7 @@ IS
 
                 IF existe = 0
                 THEN
-                    RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DEL ACTA DE INTERVENCI&Oacute;N REGISTRADA';
+                    RETURN 'Debe completar el llenado de la informaci&oacute;n del Acta de Intervenci&oacute;n registrada';
                 END IF;
             END IF;
 
@@ -2076,7 +2076,7 @@ IS
 
                 IF existe = 0
                 THEN
-                    RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DE LA RESOLUCI&Oacute;N ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO REGISTRADA';
+                    RETURN 'Debe completar el llenado de la informaci&oacute;n de la resoluci&oacute;n administrativa y determinativa de facilidades de pago registrada';
                 END IF;
             END IF;
 
@@ -2112,13 +2112,13 @@ IS
 
                 IF existe = 0
                 THEN
-                    RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DEL AUTO INICIAL DE SUMARIO CONTRAVENCIONAL REGISTRADO';
+                    RETURN 'Debe completar el llenado de la informaci&oacute;n del auto inicial de sumario contravencional registrado';
                 END IF;
             END IF;
 
             IF cont = 0
             THEN
-                RETURN 'DEBE LLENAR POR LO MENOS UNO DE LOS DOCUMENTOS DE CONCLUSION';
+                RETURN 'Debe llenar por lo menos uno de los documentos de conclusi&oacute;n';
             END IF;
 
             SELECT   COUNT (1)
@@ -2143,7 +2143,7 @@ IS
                         prm_usuario,
                         SYSDATE);
 
-            RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA CONCLUSI&Oacute;N DE LA FISCALIZACI&Oacute;N';
+            RETURN 'CORRECTOSe registr&oacute; correctamente la conclusi&oacute;n de la fiscalizaci&oacute;n';
         ELSE
             IF estado = 'CONCLUIDO'
             THEN
@@ -2170,7 +2170,7 @@ IS
 
                     IF existe = 0
                     THEN
-                        RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DE LA VISTA DE CARGO REGISTRADA';
+                        RETURN 'Debe completar el llenado de la informaci&oacute;n de la Vista de Cargo registrada';
                     END IF;
                 END IF;
 
@@ -2201,7 +2201,7 @@ IS
 
                     IF existe = 0
                     THEN
-                        RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DEL ACTA DE INTERVENCI&Oacute;N REGISTRADA';
+                        RETURN 'Debe completar el llenado de la informaci&oacute;n del Acta de Intervenci&oacute;n registrada';
                     END IF;
                 END IF;
 
@@ -2227,13 +2227,13 @@ IS
 
                     IF existe = 0
                     THEN
-                        RETURN 'DEBE COMPLETAR EL LLENADO DE LA INFORMACI&Oacute;N DEL AUTO INICIAL DE SUMARIO CONTRAVENCIONAL REGISTRADO';
+                        RETURN 'Debe completar el llenado de la informaci&oacute;n del Auto Inicial de Sumario Contravencional registrado';
                     END IF;
                 END IF;
 
                 IF cont = 0
                 THEN
-                    RETURN 'DEBE LLENAR POR LO MENOS UNO DE LOS DOCUMENTOS DE CONCLUSI&Oacute;N';
+                    RETURN 'Debe llenar por lo menos uno de los documentos de conclusi&oacute;n';
                 END IF;
 
                 SELECT   COUNT (1)
@@ -2258,9 +2258,9 @@ IS
                             prm_usuario,
                             SYSDATE);
 
-                RETURN 'CORRECTOSE REGISTR&Oacute; CORRECTAMENTE LA CONCLUSI&Oacute;N DE LA FISCALIZACI&Oacute;N POR LA UNIDAD LEGAL';
+                RETURN 'CORRECTOSe registr&oacute; correctamente la conclusi&oacute;n de la fiscalizaci&oacute;n por la unidad legal';
             ELSE
-                RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
+                RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
             END IF;
         END IF;
     END;

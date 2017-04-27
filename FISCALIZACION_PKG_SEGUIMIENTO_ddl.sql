@@ -141,7 +141,7 @@ IS
 
         IF v_fecreg > TO_DATE (prm_fechanot, 'dd/mm/yyyy')
         THEN
-            RETURN 'LA FECHA DE NOTIFICACION NO PUEDE SER MENOR A LA FECHA DE REGISTRO '
+            RETURN 'La fecha de notificaci&oacute;n no puede ser menor a la fecha de registro '
                    || TO_CHAR (v_fecreg, 'dd/mm/yyyy');
         ELSE
             SELECT   COUNT (1)
@@ -171,7 +171,7 @@ IS
                             SYSDATE);
 
                 COMMIT;
-                RETURN 'CORRECTOSE REGISTRO CORRECTAMENTE LA NOTIFICACION';
+                RETURN 'CORRECTOe registr&oacute; correctamente la notificaci&oacute;n';
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
@@ -199,7 +199,7 @@ IS
                             prm_usuario,
                             SYSDATE);
 
-                RETURN 'CORRECTOSE MODIFICO CORRECTAMENTE LA NOTIFICACION';
+                RETURN 'CORRECTOSe modific&oacute; correctamente la notificaci&oacute;n';
             END IF;
         END IF;
     EXCEPTION
@@ -979,7 +979,7 @@ IS
                         SYSDATE);
 
             COMMIT;
-            RETURN 'CORRECTOSE REGISTRO CORRECTAMENTE LA NOTIFICACION';
+            RETURN 'CORRECTOSe registr&oacute; correctamente la notificaci&oacute;n';
         ELSE
             SELECT   COUNT (1)
               INTO   existe
@@ -1005,7 +1005,7 @@ IS
                         prm_usuario,
                         SYSDATE);
 
-            RETURN 'CORRECTOSE MODIFICO CORRECTAMENTE LA NOTIFICACION';
+            RETURN 'CORRECTOSe modific&oacute; correctamente la notificaci&oacute;n';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -1056,7 +1056,7 @@ IS
                         SYSDATE);
 
             COMMIT;
-            RETURN 'CORRECTOSE REGISTRO CORRECTAMENTE LA CONCLUSION';
+            RETURN 'CORRECTOSe registr&oacute; correctamente la conclusi&oacute;n';
         ELSE
             SELECT   COUNT (1)
               INTO   existe
@@ -1084,7 +1084,7 @@ IS
                         prm_usuario,
                         SYSDATE);
 
-            RETURN 'CORRECTOSE MODIFICO CORRECTAMENTE LA CONCLUSION';
+            RETURN 'CORRECTOSe modific&oacute; correctamente la conclusi&oacute;n';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -2855,7 +2855,7 @@ IS
 
         IF existe = 0
         THEN
-            RETURN 'NO EXISTE EL CONTROL';
+            RETURN 'No existe el Control';
         END IF;
 
         SELECT   COUNT (1)
@@ -2868,7 +2868,7 @@ IS
 
         IF existe = 0
         THEN
-            RETURN 'EL CONTROL NO ESTA EN ESTADO REGISTRADO';
+            RETURN 'El Control no est&aacute; en estado registrado';
         END IF;
 
         SELECT   ctl_cod_tipo
@@ -2881,12 +2881,12 @@ IS
         IF v_tipocontrol = 'AMPLIATORIA DIFERIDO'
            AND v_tipocontrol = 'AMPLIATORIA POSTERIOR'
         THEN
-            RETURN 'NO SE PUEDE REGISTRAR AMPLIACION DE ALCANCE DE UNA FISCALIZACION AMPLIATORIA';
+            RETURN 'No se puede registrar ampliaci&oacute;n de alcance de una fiscalizaci&oacute;n ampliatoria';
         END IF;
 
         IF v_tipocontrol = 'DIFERIDO'
         THEN
-            RETURN 'NO SE PUEDE REGISTRAR AMPLIACION DE ALCANCE DE UN CONTROL DIFERIDO';
+            RETURN 'No se puede registrar ampliaci&oacute;n de alcance de un Control Diferido';
         END IF;
 
 
