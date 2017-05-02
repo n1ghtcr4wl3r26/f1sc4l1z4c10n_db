@@ -6577,7 +6577,7 @@ AS
                      || 'C-'
                      || b.alc_numero
                          tramite,
-                     'DECLARACI&Oacute;N',
+                     'DECLARACION',
                      0,
                      b.alc_tipo_etapa
               FROM   fis_control a, fis_alcance b

@@ -1,16 +1,16 @@
 CREATE OR REPLACE 
 PACKAGE pkg_general
-/* Formatted on 28-dic.-2016 12:27:02 (QP5 v5.126) */
+/* Formatted on 2-may.-2017 2:58:31 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
     FUNCTION devuelve_fecha
         RETURN VARCHAR2;
 
-    FUNCTION devuelve_pais(prm_codigo    IN VARCHAR2)
+    FUNCTION devuelve_pais (prm_codigo IN VARCHAR2)
         RETURN VARCHAR2;
 
-    FUNCTION devuelve_tipo_empresa (nit    IN VARCHAR2)
+    FUNCTION devuelve_tipo_empresa (nit IN VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION mostrar_botones (prm_codigo    IN VARCHAR2,
@@ -32,7 +32,7 @@ IS
     FUNCTION lista_aduanas
         RETURN cursortype;
 
-    FUNCTION lista_aduanas (gerencia varchar2)
+    FUNCTION lista_aduanas (gerencia VARCHAR2)
         RETURN cursortype;
 
     FUNCTION lista_paises
@@ -68,32 +68,39 @@ IS
     FUNCTION roundsidunea (p_numero IN NUMBER, p_preci IN NUMBER)
         RETURN NUMBER;
 
-    FUNCTION verifica_usuariogerencia (prm_codigo IN VARCHAR2, prm_usuario IN VARCHAR2)
+    FUNCTION verifica_usuariogerencia (prm_codigo    IN VARCHAR2,
+                                       prm_usuario   IN VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION devuelve_datos_dui (prm_codigo IN VARCHAR2)
         RETURN cursortype;
 
-    FUNCTION esFechaMenorIgualAHoy (prm_fecha    IN VARCHAR2)
+    FUNCTION esfechamenorigualahoy (prm_fecha IN VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION f_matriz_permutaciones (x IN NUMBER, y IN NUMBER)
-      RETURN NUMBER;
+        RETURN NUMBER;
 
-   FUNCTION f_matriz_verhoeff (x IN NUMBER, y IN NUMBER)
-      RETURN NUMBER;
+    FUNCTION f_matriz_verhoeff (x IN NUMBER, y IN NUMBER)
+        RETURN NUMBER;
 
-   FUNCTION f_validadigitoverificador (p_numero IN NUMBER)
-      RETURN NUMBER;
+    FUNCTION f_validadigitoverificador (p_numero IN NUMBER)
+        RETURN NUMBER;
 
-   FUNCTION is_number (prm_codigo IN VARCHAR2)
-        RETURN number;
+    FUNCTION is_number (prm_codigo IN VARCHAR2)
+        RETURN NUMBER;
+
+    FUNCTION verifica_acceso (prm_codigo     IN VARCHAR2,
+                              prm_usuario    IN VARCHAR2,
+                              prm_opcion     IN VARCHAR2,
+                              prm_gerencia   IN VARCHAR2)
+        RETURN VARCHAR2;
 END;
 /
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 4-abr.-2017 19:51:51 (QP5 v5.126) */
+/* Formatted on 2-may.-2017 4:27:23 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -101,6 +108,7 @@ AS
         res   VARCHAR2 (50);
     BEGIN
         SELECT   TO_CHAR (SYSDATE, 'dd/mm/yyyy hh24:mi:ss') INTO res FROM DUAL;
+
         RETURN res;
     END;
 
@@ -471,7 +479,7 @@ AS
                      a.sad_reg_serial,
                      a.sad_reg_nber,
                      a.sad_consignee,
-                     to_char(a.sad_reg_date,'dd/mm/yyyy'),
+                     TO_CHAR (a.sad_reg_date, 'dd/mm/yyyy'),
                      a.sad_itm_total,
                      a.sad_typ_dec || a.sad_typ_proc
               FROM   ops$asy.sad_gen a
@@ -903,15 +911,14 @@ AS
     IS
         res      VARCHAR2 (50) := 0;
         existe   NUMBER;
-
     BEGIN
-
-
         IF tipo = 'POSTERIOR' OR tipo = 'DIFERIDO'
         THEN
-            if is_number(numero) = 0 then
+            IF is_number (numero) = 0
+            THEN
                 RETURN 'EL N&Uacute;MERO DE ORDEN NO ES V&Aacute;LIDO';
-            end if;
+            END IF;
+
             SELECT   COUNT (1)
               INTO   existe
               FROM   fis_control a
@@ -939,10 +946,18 @@ AS
                 RETURN 'CORRECTO' || res;
             END IF;
         ELSE
-            IF INSTR(numero,'/') = 0 THEN
+            IF INSTR (numero, '/') = 0
+            THEN
                 RETURN 'EL N&Uacute;MERO DE ORDEN AMPLIATORIA NO ES V&Aacute;LIDO';
             ELSE
-                IF is_number(SUBSTR(numero,0,INSTR(numero,'/') -1)) = 0 OR is_number(SUBSTR(numero,INSTR(numero,'/')+1,LENGTH(numero)- INSTR(numero,'/')))  = 0 THEN
+                IF is_number (SUBSTR (numero, 0, INSTR (numero, '/') - 1)) =
+                       0
+                   OR is_number(SUBSTR (
+                                    numero,
+                                    INSTR (numero, '/') + 1,
+                                    LENGTH (numero) - INSTR (numero, '/'))) =
+                         0
+                THEN
                     RETURN 'EL N&Uacute;MERO DE ORDEN AMPLIATORIA NO ES V&Aacute;LIDO';
                 END IF;
             END IF;
@@ -1171,12 +1186,13 @@ AS
             RETURN 'El Usuario o el Control no tienen Gerencia Asignada';
     END;
 
-    FUNCTION esFechaMenorIgualAHoy (prm_fecha    IN VARCHAR2)
+    FUNCTION esfechamenorigualahoy (prm_fecha IN VARCHAR2)
         RETURN VARCHAR2
     IS
-        res      VARCHAR2 (50);
+        res   VARCHAR2 (50);
     BEGIN
-        IF  TO_DATE(prm_fecha,'dd/mm/yyyy') <= TRUNC(SYSDATE) THEN
+        IF TO_DATE (prm_fecha, 'dd/mm/yyyy') <= TRUNC (SYSDATE)
+        THEN
             res := 'CORRECTO';
         ELSE
             res := 'FALSO';
@@ -1186,139 +1202,139 @@ AS
     END;
 
     FUNCTION f_matriz_permutaciones (x IN NUMBER, y IN NUMBER)
-      RETURN NUMBER
-   IS
-      v_0        VARCHAR2 (10) := '0123456789';
-      v_1        VARCHAR2 (10) := '1576283094';
-      v_2        VARCHAR2 (10) := '5803796142';
-      v_3        VARCHAR2 (10) := '8916043527';
-      v_4        VARCHAR2 (10) := '9453126870';
-      v_5        VARCHAR2 (10) := '4286573901';
-      v_6        VARCHAR2 (10) := '2793806415';
-      v_7        VARCHAR2 (10) := '7046913258';
-      v_salida   NUMBER;
-   BEGIN
-      IF x = 0
-      THEN
-         v_salida   := SUBSTR (v_0, y + 1, 1);
-      ELSIF x = 1
-      THEN
-         v_salida   := SUBSTR (v_1, y + 1, 1);
-      ELSIF x = 2
-      THEN
-         v_salida   := SUBSTR (v_2, y + 1, 1);
-      ELSIF x = 3
-      THEN
-         v_salida   := SUBSTR (v_3, y + 1, 1);
-      ELSIF x = 4
-      THEN
-         v_salida   := SUBSTR (v_4, y + 1, 1);
-      ELSIF x = 5
-      THEN
-         v_salida   := SUBSTR (v_5, y + 1, 1);
-      ELSIF x = 6
-      THEN
-         v_salida   := SUBSTR (v_6, y + 1, 1);
-      ELSIF x = 7
-      THEN
-         v_salida   := SUBSTR (v_7, y + 1, 1);
-      ELSE
-         v_salida   := -1;
-      END IF;
-
-      RETURN v_salida;
-   END;
-
-   FUNCTION f_matriz_verhoeff (x IN NUMBER, y IN NUMBER)
-      RETURN NUMBER
-   IS
-      v_0        VARCHAR2 (10) := '0123456789';
-      v_1        VARCHAR2 (10) := '1234067895';
-      v_2        VARCHAR2 (10) := '2340178956';
-      v_3        VARCHAR2 (10) := '3401289567';
-      v_4        VARCHAR2 (10) := '4012395678';
-      v_5        VARCHAR2 (10) := '5987604321';
-      v_6        VARCHAR2 (10) := '6598710432';
-      v_7        VARCHAR2 (10) := '7659821043';
-      v_8        VARCHAR2 (10) := '8765932104';
-      v_9        VARCHAR2 (10) := '9876543210';
-      v_salida   NUMBER;
-   BEGIN
-      IF x = 0
-      THEN
-         v_salida   := SUBSTR (v_0, y + 1, 1);
-      ELSIF x = 1
-      THEN
-         v_salida   := SUBSTR (v_1, y + 1, 1);
-      ELSIF x = 2
-      THEN
-         v_salida   := SUBSTR (v_2, y + 1, 1);
-      ELSIF x = 3
-      THEN
-         v_salida   := SUBSTR (v_3, y + 1, 1);
-      ELSIF x = 4
-      THEN
-         v_salida   := SUBSTR (v_4, y + 1, 1);
-      ELSIF x = 5
-      THEN
-         v_salida   := SUBSTR (v_5, y + 1, 1);
-      ELSIF x = 6
-      THEN
-         v_salida   := SUBSTR (v_6, y + 1, 1);
-      ELSIF x = 7
-      THEN
-         v_salida   := SUBSTR (v_7, y + 1, 1);
-      ELSIF x = 8
-      THEN
-         v_salida   := SUBSTR (v_8, y + 1, 1);
-      ELSIF x = 9
-      THEN
-         v_salida   := SUBSTR (v_9, y + 1, 1);
-      ELSE
-         v_salida   := -1;
-      END IF;
-
-      RETURN v_salida;
-   END;
-
-   FUNCTION f_validadigitoverificador (p_numero IN NUMBER)
-      RETURN NUMBER
-   IS
-      v_retorno   NUMBER;
-      v_largo     NUMBER;
-      v_check     NUMBER := 0;
-      i           NUMBER;
-      x           NUMBER;
-      y           NUMBER;
-      z           NUMBER;
-   BEGIN
-      v_largo   := LENGTH (p_numero);
-
-      FOR i IN 0 .. v_largo - 1
-      LOOP
-         x         := MOD (i, 8);
-         y         := SUBSTR (p_numero, v_largo - i, 1);
-         z         := f_matriz_permutaciones (x, y);
-         v_check   := f_matriz_verhoeff (v_check, z);
-      END LOOP;
-
-      IF v_check = 0
-      THEN
-         v_retorno   := 1;
-      ELSE
-         v_retorno   := 0;
-      END IF;
-
-      RETURN v_retorno;
-   END;
-
-   FUNCTION is_number (prm_codigo IN VARCHAR2)
-        RETURN number
+        RETURN NUMBER
     IS
-        res   number(5);
-        v_number NUMBER;
+        v_0        VARCHAR2 (10) := '0123456789';
+        v_1        VARCHAR2 (10) := '1576283094';
+        v_2        VARCHAR2 (10) := '5803796142';
+        v_3        VARCHAR2 (10) := '8916043527';
+        v_4        VARCHAR2 (10) := '9453126870';
+        v_5        VARCHAR2 (10) := '4286573901';
+        v_6        VARCHAR2 (10) := '2793806415';
+        v_7        VARCHAR2 (10) := '7046913258';
+        v_salida   NUMBER;
     BEGIN
-        v_number := TO_NUMBER(prm_codigo);
+        IF x = 0
+        THEN
+            v_salida := SUBSTR (v_0, y + 1, 1);
+        ELSIF x = 1
+        THEN
+            v_salida := SUBSTR (v_1, y + 1, 1);
+        ELSIF x = 2
+        THEN
+            v_salida := SUBSTR (v_2, y + 1, 1);
+        ELSIF x = 3
+        THEN
+            v_salida := SUBSTR (v_3, y + 1, 1);
+        ELSIF x = 4
+        THEN
+            v_salida := SUBSTR (v_4, y + 1, 1);
+        ELSIF x = 5
+        THEN
+            v_salida := SUBSTR (v_5, y + 1, 1);
+        ELSIF x = 6
+        THEN
+            v_salida := SUBSTR (v_6, y + 1, 1);
+        ELSIF x = 7
+        THEN
+            v_salida := SUBSTR (v_7, y + 1, 1);
+        ELSE
+            v_salida := -1;
+        END IF;
+
+        RETURN v_salida;
+    END;
+
+    FUNCTION f_matriz_verhoeff (x IN NUMBER, y IN NUMBER)
+        RETURN NUMBER
+    IS
+        v_0        VARCHAR2 (10) := '0123456789';
+        v_1        VARCHAR2 (10) := '1234067895';
+        v_2        VARCHAR2 (10) := '2340178956';
+        v_3        VARCHAR2 (10) := '3401289567';
+        v_4        VARCHAR2 (10) := '4012395678';
+        v_5        VARCHAR2 (10) := '5987604321';
+        v_6        VARCHAR2 (10) := '6598710432';
+        v_7        VARCHAR2 (10) := '7659821043';
+        v_8        VARCHAR2 (10) := '8765932104';
+        v_9        VARCHAR2 (10) := '9876543210';
+        v_salida   NUMBER;
+    BEGIN
+        IF x = 0
+        THEN
+            v_salida := SUBSTR (v_0, y + 1, 1);
+        ELSIF x = 1
+        THEN
+            v_salida := SUBSTR (v_1, y + 1, 1);
+        ELSIF x = 2
+        THEN
+            v_salida := SUBSTR (v_2, y + 1, 1);
+        ELSIF x = 3
+        THEN
+            v_salida := SUBSTR (v_3, y + 1, 1);
+        ELSIF x = 4
+        THEN
+            v_salida := SUBSTR (v_4, y + 1, 1);
+        ELSIF x = 5
+        THEN
+            v_salida := SUBSTR (v_5, y + 1, 1);
+        ELSIF x = 6
+        THEN
+            v_salida := SUBSTR (v_6, y + 1, 1);
+        ELSIF x = 7
+        THEN
+            v_salida := SUBSTR (v_7, y + 1, 1);
+        ELSIF x = 8
+        THEN
+            v_salida := SUBSTR (v_8, y + 1, 1);
+        ELSIF x = 9
+        THEN
+            v_salida := SUBSTR (v_9, y + 1, 1);
+        ELSE
+            v_salida := -1;
+        END IF;
+
+        RETURN v_salida;
+    END;
+
+    FUNCTION f_validadigitoverificador (p_numero IN NUMBER)
+        RETURN NUMBER
+    IS
+        v_retorno   NUMBER;
+        v_largo     NUMBER;
+        v_check     NUMBER := 0;
+        i           NUMBER;
+        x           NUMBER;
+        y           NUMBER;
+        z           NUMBER;
+    BEGIN
+        v_largo := LENGTH (p_numero);
+
+        FOR i IN 0 .. v_largo - 1
+        LOOP
+            x := MOD (i, 8);
+            y := SUBSTR (p_numero, v_largo - i, 1);
+            z := f_matriz_permutaciones (x, y);
+            v_check := f_matriz_verhoeff (v_check, z);
+        END LOOP;
+
+        IF v_check = 0
+        THEN
+            v_retorno := 1;
+        ELSE
+            v_retorno := 0;
+        END IF;
+
+        RETURN v_retorno;
+    END;
+
+    FUNCTION is_number (prm_codigo IN VARCHAR2)
+        RETURN NUMBER
+    IS
+        res        NUMBER (5);
+        v_number   NUMBER;
+    BEGIN
+        v_number := TO_NUMBER (prm_codigo);
 
         RETURN 1;
     EXCEPTION
@@ -1327,6 +1343,154 @@ AS
             RETURN 0;
     END;
 
+    FUNCTION verifica_acceso (prm_codigo     IN VARCHAR2,
+                              prm_usuario    IN VARCHAR2,
+                              prm_opcion     IN VARCHAR2,
+                              prm_gerencia   IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res    VARCHAR2 (50) := 'NOCORRECTO';
+        cont   NUMBER (10);
+    BEGIN
+        IF (prm_opcion = 'NOTIFICACION' OR prm_opcion = 'AMPLIACION' OR prm_opcion = 'GENERACION' OR prm_opcion = 'SUBIR' OR prm_opcion = 'EXCEL')
+        THEN
+            SELECT   COUNT (1)
+              INTO   cont
+              FROM   fis_acceso a
+             WHERE   a.ctl_control_id = prm_codigo
+                     AND a.fis_codigo_fiscalizador = prm_usuario
+                     AND (a.fis_cargo = 'FISCALIZADOR'
+                          OR a.fis_cargo = 'FISCALIZADOR APOYO')
+                     AND a.fis_num = 0
+                     AND a.fis_lstope = 'U';
+
+            IF cont > 0
+            THEN
+                res := 'CORRECTO';
+            ELSE
+                res := 'NOCORRECTO';
+            END IF;
+        END IF;
+
+        IF (prm_opcion = 'CONCLUSION')
+        THEN
+            SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   usuario.usu_rol a
+                 WHERE   a.usucodusu = prm_usuario
+                         AND a.rol_cod = 'GNF_LEGAL'
+                         AND a.lst_ope = 'U'
+                         AND a.ult_ver = 0;
+            IF cont = 0
+            THEN
+                SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   fis_acceso a
+                 WHERE   a.ctl_control_id = prm_codigo
+                         AND a.fis_codigo_fiscalizador = prm_usuario
+                         AND (a.fis_cargo = 'FISCALIZADOR'
+                              OR a.fis_cargo = 'FISCALIZADOR APOYO')
+                         AND a.fis_num = 0
+                         AND a.fis_lstope = 'U';
+
+                IF cont > 0
+                THEN
+                    res := 'CORRECTO';
+                ELSE
+                    res := 'NOCORRECTO';
+                END IF;
+            ELSE
+                res := 'CORRECTO';
+            END IF;
+        END IF;
+
+        IF (prm_opcion = 'ALCANCE' OR prm_opcion = 'ASIGNACION' OR prm_opcion = 'REGISTRA')
+        THEN
+            SELECT   COUNT (1)
+              INTO   cont
+              FROM   usuario.usu_rol a
+             WHERE   a.usucodusu = prm_usuario
+                     AND (a.rol_cod = 'GNF_JEFEUFR'
+                          OR a.rol_cod = 'GNF_SUPERVISORUFR'
+                          OR a.rol_cod = 'GNF_INVESTIGADORUFR')
+                     AND a.lst_ope = 'U'
+                     AND a.ult_ver = 0;
+
+            IF cont > 0
+            THEN
+                SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   fis_control a
+                 WHERE       a.ctl_control_id = prm_codigo
+                         AND a.ctl_num = 0
+                         AND a.ctl_lstope = 'U'
+                         AND a.ctl_cod_gerencia = prm_gerencia;
+
+                IF cont > 0
+                THEN
+                    res := 'CORRECTO';
+                ELSE
+                    res := 'NOGERENCIA';
+                END IF;
+            ELSE
+                res := 'NOPERFIL';
+            END IF;
+        END IF;
+
+        IF (prm_opcion = 'ANULACION' OR prm_opcion = 'REASIGNA')
+        THEN
+            SELECT   COUNT (1)
+              INTO   cont
+              FROM   usuario.usu_rol a
+             WHERE   a.usucodusu = prm_usuario
+                     AND (a.rol_cod = 'GNF_JEFEUFR'
+                          OR a.rol_cod = 'GNF_SUPERVISORUFR')
+                     AND a.lst_ope = 'U'
+                     AND a.ult_ver = 0;
+
+            IF cont > 0
+            THEN
+                /*SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   fis_acceso a
+                 WHERE   a.ctl_control_id = prm_codigo
+                         AND a.fis_usuario = prm_usuario
+                         AND (a.fis_cargo = 'JEFE'
+                              OR a.fis_cargo = 'SUPERVISOR')
+                         AND a.fis_num = 0
+                         AND a.fis_lstope = 'U';
+
+                IF cont > 0
+                THEN*/
+                SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   fis_control a
+                 WHERE       a.ctl_control_id = prm_codigo
+                         AND a.ctl_num = 0
+                         AND a.ctl_lstope = 'U'
+                         AND a.ctl_cod_gerencia = prm_gerencia;
+
+                IF cont > 0
+                THEN
+                    res := 'CORRECTO';
+                ELSE
+                    res := 'NOGERENCIA';
+                END IF;
+            /*ELSE
+                res := 'NOASIGNADO';
+            END IF;*/
+            ELSE
+                res := 'NOPERFIL';
+            END IF;
+        END IF;
+
+
+        RETURN res;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            RETURN 'NOCORRECTO';
+    END;
 END;
 /
 
