@@ -497,7 +497,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_memorizacion
-/* Formatted on 4-abr.-2017 16:32:25 (QP5 v5.126) */
+/* Formatted on 2-may.-2017 18:30:55 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -1269,7 +1269,8 @@ AS
                          AND a.car_reg_year = prm_gestion
                          AND a.key_cuo = prm_aduana
                          AND a.car_reg_nber = prm_numero
-                         AND (a.car_car_cod = prm_operador OR b.carbol_cons_cod = prm_operador);
+                         AND (a.car_car_cod = prm_operador
+                              OR b.carbol_cons_cod = prm_operador);
 
                 IF existe > 0
                 THEN
@@ -1488,11 +1489,16 @@ AS
         v_gestion   VARCHAR2 (4);
         v_numero    NUMBER;
     BEGIN
-        IF prm_tipo_doc_identidad = 'NIT' THEN
-            IF pkg_general.f_validadigitoverificador(prm_nit) = 0 THEN
-                RETURN 'El n&uacute;mero de NIT: '||prm_nit||', no es v&aacute;lido';
+        IF prm_tipo_doc_identidad = 'NIT'
+        THEN
+            IF pkg_general.f_validadigitoverificador (prm_nit) = 0
+            THEN
+                RETURN    'El n&uacute;mero de NIT: '
+                       || prm_nit
+                       || ', no es v&aacute;lido';
             END IF;
         END IF;
+
         --RETURN 'No se encuentra habilitado el registro de Controles Diferidos, los mismos deben realizarse en el sistema SICODIF';
         IF     prm_riesgodelito IS NULL
            AND prm_riesgosubval IS NULL
@@ -1662,10 +1668,13 @@ AS
         vr_gestion   VARCHAR2 (4);
         vr_numero    NUMBER;
     BEGIN
-
-        IF prm_tipo_doc_identidad = 'NIT' THEN
-            IF pkg_general.f_validadigitoverificador(prm_nit) = 0 THEN
-                RETURN 'El n&uacute;mero de NIT: '||prm_nit||', no es v&aacute;lido';
+        IF prm_tipo_doc_identidad = 'NIT'
+        THEN
+            IF pkg_general.f_validadigitoverificador (prm_nit) = 0
+            THEN
+                RETURN    'El n&uacute;mero de NIT: '
+                       || prm_nit
+                       || ', no es v&aacute;lido';
             END IF;
         END IF;
 
@@ -1841,10 +1850,13 @@ AS
 
         v_tipo_operador         VARCHAR2 (30);
     BEGIN
-
-        IF prm_tipo_doc_identidad = 'NIT' THEN
-            IF pkg_general.f_validadigitoverificador(prm_nit) = 0 THEN
-                RETURN 'El n&uacute;mero de NIT: '||prm_nit||', no es v&aacute;lido';
+        IF prm_tipo_doc_identidad = 'NIT'
+        THEN
+            IF pkg_general.f_validadigitoverificador (prm_nit) = 0
+            THEN
+                RETURN    'El n&uacute;mero de NIT: '
+                       || prm_nit
+                       || ', no es v&aacute;lido';
             END IF;
         END IF;
 
@@ -2366,11 +2378,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -2488,11 +2501,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -2618,11 +2632,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -2741,11 +2756,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -2869,11 +2885,11 @@ AS
                                            'AMARILLO',
                                            3,
                                            'ROJO')
-                                       canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                       canal,                             --16
+                                   devuelve_ficha_inf (gen.sad_reg_year,
+                                                       gen.key_cuo,
+                                                       gen.sad_reg_nber)
+                                       ficha
                             FROM   ops$asy.sad_gen gen,
                                    ops$asy.sad_itm itm,
                                    ops$asy.sad_occ_cns cns,
@@ -2982,11 +2998,11 @@ AS
                                            'AMARILLO',
                                            3,
                                            'ROJO')
-                                       canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                       canal,                             --16
+                                   devuelve_ficha_inf (gen.sad_reg_year,
+                                                       gen.key_cuo,
+                                                       gen.sad_reg_nber)
+                                       ficha
                             FROM   ops$asy.sad_gen gen,
                                    ops$asy.sad_itm itm,
                                    ops$asy.sad_occ_cns cns,
@@ -3518,11 +3534,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -3649,11 +3666,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -3788,11 +3806,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -3920,11 +3939,12 @@ AS
                                                      'AMARILLO',
                                                      3,
                                                      'ROJO')
-                                                 canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                                 canal,                   --16
+                                             devuelve_ficha_inf (
+                                                 gen.sad_reg_year,
+                                                 gen.key_cuo,
+                                                 gen.sad_reg_nber)
+                                                 ficha
                                       FROM   ops$asy.sad_gen gen,
                                              ops$asy.sad_itm itm,
                                              ops$asy.sad_occ_cns cns,
@@ -4056,11 +4076,11 @@ AS
                                            'AMARILLO',
                                            3,
                                            'ROJO')
-                                       canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                       canal,                             --16
+                                   devuelve_ficha_inf (gen.sad_reg_year,
+                                                       gen.key_cuo,
+                                                       gen.sad_reg_nber)
+                                       ficha
                             FROM   ops$asy.sad_gen gen,
                                    ops$asy.sad_itm itm,
                                    ops$asy.sad_occ_cns cns,
@@ -4177,11 +4197,11 @@ AS
                                            'AMARILLO',
                                            3,
                                            'ROJO')
-                                       canal,                    --16
-                                             devuelve_ficha_inf (gen.sad_reg_year,
-                                                         gen.key_cuo,
-                                                         gen.sad_reg_nber)
-                                                        ficha
+                                       canal,                             --16
+                                   devuelve_ficha_inf (gen.sad_reg_year,
+                                                       gen.key_cuo,
+                                                       gen.sad_reg_nber)
+                                       ficha
                             FROM   ops$asy.sad_gen gen,
                                    ops$asy.sad_itm itm,
                                    ops$asy.sad_occ_cns cns,
@@ -9080,39 +9100,83 @@ AS
                                     SYSDATE,
                                     prm_tipo_etapa);
                     ELSE
-                        UPDATE   fis_alcance_item
-                           SET   ali_num = existe
-                         WHERE       alc_alcance_id = v_codigo
-                                 AND ali_numero_item = v_item
-                                 AND ali_num = 0;
+                        SELECT   b.ali_lstope
+                          INTO   res
+                          FROM   fis_alcance_item b
+                         WHERE       b.alc_alcance_id = v_codigo
+                                 AND b.ali_numero_item = v_item
+                                 AND b.ali_num = 0;
 
-                        INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                        a.ali_numero_item,
-                                                        a.ali_obs_valor,
-                                                        a.ali_obs_partida,
-                                                        a.ali_obs_origen,
-                                                        a.ali_num,
-                                                        a.ali_lstope,
-                                                        a.ali_usuario,
-                                                        a.ali_fecsys,
-                                                        a.ali_obs_otro,
-                                                        a.ali_tipo_etapa)
-                            SELECT   alc_alcance_id,
-                                     ali_numero_item,
-                                     'x',
-                                     ali_obs_partida,
-                                     ali_obs_origen,
-                                     0,
-                                     'U',
-                                     prm_usuario,
-                                     SYSDATE,
-                                     ali_obs_otro,
-                                     ali_tipo_etapa
-                              FROM   fis_alcance_item
+                        IF res = 'U'
+                        THEN
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
                              WHERE       alc_alcance_id = v_codigo
                                      AND ali_numero_item = v_item
-                                     AND ali_num = existe
-                                     AND ROWNUM = 1;
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         'x',
+                                         ali_obs_partida,
+                                         ali_obs_origen,
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         ali_obs_otro,
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        ELSE
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
+                             WHERE       alc_alcance_id = v_codigo
+                                     AND ali_numero_item = v_item
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         'x',
+                                         NULL,
+                                         NULL,
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         NULL,
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        END IF;
                     END IF;
                 END IF;
             END LOOP;
@@ -9284,39 +9348,83 @@ AS
                                     'x',
                                     prm_tipo_etapa);
                     ELSE
-                        UPDATE   fis_alcance_item
-                           SET   ali_num = existe
-                         WHERE       alc_alcance_id = v_codigo
-                                 AND ali_numero_item = v_item
-                                 AND ali_num = 0;
+                        SELECT   b.ali_lstope
+                          INTO   res
+                          FROM   fis_alcance_item b
+                         WHERE       b.alc_alcance_id = v_codigo
+                                 AND b.ali_numero_item = v_item
+                                 AND b.ali_num = 0;
 
-                        INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                        a.ali_numero_item,
-                                                        a.ali_obs_valor,
-                                                        a.ali_obs_partida,
-                                                        a.ali_obs_origen,
-                                                        a.ali_num,
-                                                        a.ali_lstope,
-                                                        a.ali_usuario,
-                                                        a.ali_fecsys,
-                                                        a.ali_obs_otro,
-                                                        a.ali_tipo_etapa)
-                            SELECT   alc_alcance_id,
-                                     ali_numero_item,
-                                     ali_obs_valor,
-                                     ali_obs_partida,
-                                     ali_obs_origen,
-                                     0,
-                                     'U',
-                                     prm_usuario,
-                                     SYSDATE,
-                                     'x',
-                                     ali_tipo_etapa
-                              FROM   fis_alcance_item
+                        IF res = 'U'
+                        THEN
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
                              WHERE       alc_alcance_id = v_codigo
                                      AND ali_numero_item = v_item
-                                     AND ali_num = existe
-                                     AND ROWNUM = 1;
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         ali_obs_valor,
+                                         ali_obs_partida,
+                                         ali_obs_origen,
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         'x',
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        ELSE
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
+                             WHERE       alc_alcance_id = v_codigo
+                                     AND ali_numero_item = v_item
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         NULL,
+                                         NULL,
+                                         NULL,
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         'x',
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        END IF;
                     END IF;
                 END IF;
             END LOOP;
@@ -9404,80 +9512,86 @@ AS
         total        NUMBER := 0;
         grabadas     NUMBER := 0;
     BEGIN
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_alcance b
-         WHERE       b.alc_numero = prm_numero
-                 AND b.alc_fecha = TO_DATE (prm_fecha, 'dd/mm/yyyy')
-                 AND b.alc_proveedor = prm_proveedor
-                 AND b.alc_pais = prm_origen
-                 AND b.alc_tipo_tramite = prm_tipo_tramite
-                 AND b.alc_num = 0
-                 AND b.alc_lstope = 'U'
-                 AND b.ctl_control_id = prm_id;
-
-        IF existe = 0
+        IF TO_DATE (prm_fecha, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            v_gestion := TO_CHAR (SYSDATE, 'yyyy');
-            v_numero := numero_control_alc (v_gestion);
-
-            INSERT INTO fis_alcance (alc_alcance_id,
-                                     alc_tipo_alcance,
-                                     alc_tipo_tramite,
-                                     alc_gestion,
-                                     alc_numero,
-                                     alc_fecha,
-                                     alc_proveedor,
-                                     alc_pais,
-                                     alc_num,
-                                     alc_lstope,
-                                     alc_usuario,
-                                     alc_fecsys,
-                                     ctl_control_id,
-                                     alc_tipo_etapa)
-              VALUES   (v_gestion || TO_CHAR (v_numero),
-                        'TRAMITE',
-                        prm_tipo_tramite,
-                        TO_CHAR (SYSDATE, 'YYYY'),
-                        prm_numero,
-                        TO_DATE (prm_fecha, 'dd/mm/yyyy'),
-                        prm_proveedor,
-                        prm_origen,
-                        0,
-                        'U',
-                        prm_usuario,
-                        SYSDATE,
-                        prm_id,
-                        prm_tipo_etapa);
-
-            INSERT INTO fis_alcance_item (alc_alcance_id,
-                                          ali_numero_item,
-                                          ali_obs_valor,
-                                          ali_obs_partida,
-                                          ali_obs_origen,
-                                          ali_num,
-                                          ali_lstope,
-                                          ali_usuario,
-                                          ali_fecsys,
-                                          ali_tipo_etapa)
-              VALUES   (v_gestion || TO_CHAR (v_numero),
-                        1,
-                        NULL,
-                        NULL,
-                        NULL,
-                        0,
-                        'U',
-                        prm_usuario,
-                        SYSDATE,
-                        prm_tipo_etapa);
-
-            COMMIT;
-            res := 'CORRECTOSe grab&oacute; correctamente el tr&aacute;mite';
+            RETURN 'La fecha no puede ser mayor a la actual';
         ELSE
-            res := 'Ya se encuentra registrado el tr&aacute;mite';
-        END IF;
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_alcance b
+             WHERE       b.alc_numero = prm_numero
+                     AND b.alc_fecha = TO_DATE (prm_fecha, 'dd/mm/yyyy')
+                     AND b.alc_proveedor = prm_proveedor
+                     AND b.alc_pais = prm_origen
+                     AND b.alc_tipo_tramite = prm_tipo_tramite
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND b.ctl_control_id = prm_id;
 
-        RETURN res;
+            IF existe = 0
+            THEN
+                v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+                v_numero := numero_control_alc (v_gestion);
+
+                INSERT INTO fis_alcance (alc_alcance_id,
+                                         alc_tipo_alcance,
+                                         alc_tipo_tramite,
+                                         alc_gestion,
+                                         alc_numero,
+                                         alc_fecha,
+                                         alc_proveedor,
+                                         alc_pais,
+                                         alc_num,
+                                         alc_lstope,
+                                         alc_usuario,
+                                         alc_fecsys,
+                                         ctl_control_id,
+                                         alc_tipo_etapa)
+                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                            'TRAMITE',
+                            prm_tipo_tramite,
+                            TO_CHAR (SYSDATE, 'YYYY'),
+                            prm_numero,
+                            TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                            prm_proveedor,
+                            prm_origen,
+                            0,
+                            'U',
+                            prm_usuario,
+                            SYSDATE,
+                            prm_id,
+                            prm_tipo_etapa);
+
+                INSERT INTO fis_alcance_item (alc_alcance_id,
+                                              ali_numero_item,
+                                              ali_obs_valor,
+                                              ali_obs_partida,
+                                              ali_obs_origen,
+                                              ali_num,
+                                              ali_lstope,
+                                              ali_usuario,
+                                              ali_fecsys,
+                                              ali_tipo_etapa)
+                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                            1,
+                            NULL,
+                            NULL,
+                            NULL,
+                            0,
+                            'U',
+                            prm_usuario,
+                            SYSDATE,
+                            prm_tipo_etapa);
+
+                COMMIT;
+                res :=
+                    'CORRECTOSe grab&oacute; correctamente el tr&aacute;mite';
+            ELSE
+                res := 'Ya se encuentra registrado el tr&aacute;mite';
+            END IF;
+
+            RETURN res;
+        END IF;
     EXCEPTION
         WHEN OTHERS
         THEN
@@ -9510,82 +9624,88 @@ AS
         total        NUMBER := 0;
         grabadas     NUMBER := 0;
     BEGIN
-        IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
+        IF TO_DATE (prm_fecha, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
-        END IF;
-
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_alcance b
-         WHERE       b.alc_fecha = TO_DATE (prm_fecha, 'dd/mm/yyyy')
-                 AND b.alc_proveedor = prm_proveedor
-                 AND b.alc_gestion = prm_gestion
-                 AND b.alc_tipo_tramite = prm_tipo_tramite
-                 AND b.alc_num = 0
-                 AND b.alc_lstope = 'U'
-                 AND b.ctl_control_id = prm_id;
-
-        IF existe = 0
-        THEN
-            v_gestion := TO_CHAR (SYSDATE, 'yyyy');
-            v_numero := numero_control_alc (v_gestion);
-
-            INSERT INTO fis_alcance (alc_alcance_id,
-                                     alc_tipo_alcance,
-                                     alc_tipo_tramite,
-                                     alc_gestion,
-                                     alc_numero,
-                                     alc_fecha,
-                                     alc_proveedor,
-                                     alc_num,
-                                     alc_lstope,
-                                     alc_usuario,
-                                     alc_fecsys,
-                                     ctl_control_id,
-                                     alc_tipo_etapa)
-              VALUES   (v_gestion || TO_CHAR (v_numero),
-                        'TRAMITE',
-                        prm_tipo_tramite,
-                        prm_gestion,
-                        0,
-                        TO_DATE (prm_fecha, 'dd/mm/yyyy'),
-                        prm_proveedor,
-                        0,
-                        'U',
-                        prm_usuario,
-                        SYSDATE,
-                        prm_id,
-                        prm_tipo_etapa);
-
-            INSERT INTO fis_alcance_item (alc_alcance_id,
-                                          ali_numero_item,
-                                          ali_obs_valor,
-                                          ali_obs_partida,
-                                          ali_obs_origen,
-                                          ali_num,
-                                          ali_lstope,
-                                          ali_usuario,
-                                          ali_fecsys,
-                                          ali_tipo_etapa)
-              VALUES   (v_gestion || TO_CHAR (v_numero),
-                        1,
-                        NULL,
-                        NULL,
-                        NULL,
-                        0,
-                        'U',
-                        prm_usuario,
-                        SYSDATE,
-                        prm_tipo_etapa);
-
-            COMMIT;
-            res := 'CORRECTOSe grab&oacute; correctamente el tr&aacute;mite';
+            RETURN 'La fecha no puede ser mayor a la actual';
         ELSE
-            res := 'Ya se encuentra registrado el tr&aacute;mite';
-        END IF;
+            IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
+            THEN
+                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
+            END IF;
 
-        RETURN res;
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_alcance b
+             WHERE       b.alc_fecha = TO_DATE (prm_fecha, 'dd/mm/yyyy')
+                     AND b.alc_proveedor = prm_proveedor
+                     AND b.alc_gestion = prm_gestion
+                     AND b.alc_tipo_tramite = prm_tipo_tramite
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND b.ctl_control_id = prm_id;
+
+            IF existe = 0
+            THEN
+                v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+                v_numero := numero_control_alc (v_gestion);
+
+                INSERT INTO fis_alcance (alc_alcance_id,
+                                         alc_tipo_alcance,
+                                         alc_tipo_tramite,
+                                         alc_gestion,
+                                         alc_numero,
+                                         alc_fecha,
+                                         alc_proveedor,
+                                         alc_num,
+                                         alc_lstope,
+                                         alc_usuario,
+                                         alc_fecsys,
+                                         ctl_control_id,
+                                         alc_tipo_etapa)
+                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                            'TRAMITE',
+                            prm_tipo_tramite,
+                            prm_gestion,
+                            0,
+                            TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                            prm_proveedor,
+                            0,
+                            'U',
+                            prm_usuario,
+                            SYSDATE,
+                            prm_id,
+                            prm_tipo_etapa);
+
+                INSERT INTO fis_alcance_item (alc_alcance_id,
+                                              ali_numero_item,
+                                              ali_obs_valor,
+                                              ali_obs_partida,
+                                              ali_obs_origen,
+                                              ali_num,
+                                              ali_lstope,
+                                              ali_usuario,
+                                              ali_fecsys,
+                                              ali_tipo_etapa)
+                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                            1,
+                            NULL,
+                            NULL,
+                            NULL,
+                            0,
+                            'U',
+                            prm_usuario,
+                            SYSDATE,
+                            prm_tipo_etapa);
+
+                COMMIT;
+                res :=
+                    'CORRECTOSe grab&oacute; correctamente el tr&aacute;mite';
+            ELSE
+                res := 'Ya se encuentra registrado el tr&aacute;mite';
+            END IF;
+
+            RETURN res;
+        END IF;
     EXCEPTION
         WHEN OTHERS
         THEN
@@ -9619,85 +9739,91 @@ AS
         total        NUMBER := 0;
         grabadas     NUMBER := 0;
     BEGIN
-        IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
+        IF TO_DATE (prm_fecha, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
-        END IF;
-
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_alcance b
-         WHERE       b.alc_fecha = TO_DATE (prm_fecha, 'dd/mm/yyyy')
-                 AND b.alc_proveedor = prm_proveedor
-                 AND b.alc_gestion = prm_gestion
-                 AND b.alc_tipo_tramite = prm_tipo_tramite
-                 AND b.alc_tipo_documento = prm_tipo_documento
-                 AND b.alc_num = 0
-                 AND b.alc_lstope = 'U'
-                 AND b.ctl_control_id = prm_id;
-
-        IF existe = 0
-        THEN
-            v_gestion := TO_CHAR (SYSDATE, 'yyyy');
-            v_numero := numero_control_alc (v_gestion);
-
-            INSERT INTO fis_alcance (alc_alcance_id,
-                                     alc_tipo_alcance,
-                                     alc_tipo_tramite,
-                                     alc_gestion,
-                                     alc_numero,
-                                     alc_fecha,
-                                     alc_proveedor,
-                                     alc_tipo_documento,
-                                     alc_num,
-                                     alc_lstope,
-                                     alc_usuario,
-                                     alc_fecsys,
-                                     ctl_control_id,
-                                     alc_tipo_etapa)
-              VALUES   (v_gestion || TO_CHAR (v_numero),
-                        'TRAMITE',
-                        prm_tipo_tramite,
-                        prm_gestion,
-                        0,
-                        TO_DATE (prm_fecha, 'dd/mm/yyyy'),
-                        prm_proveedor,
-                        prm_tipo_documento,
-                        0,
-                        'U',
-                        prm_usuario,
-                        SYSDATE,
-                        prm_id,
-                        prm_tipo_etapa);
-
-            INSERT INTO fis_alcance_item (alc_alcance_id,
-                                          ali_numero_item,
-                                          ali_obs_valor,
-                                          ali_obs_partida,
-                                          ali_obs_origen,
-                                          ali_num,
-                                          ali_lstope,
-                                          ali_usuario,
-                                          ali_fecsys,
-                                          ali_tipo_etapa)
-              VALUES   (v_gestion || TO_CHAR (v_numero),
-                        1,
-                        NULL,
-                        NULL,
-                        NULL,
-                        0,
-                        'U',
-                        prm_usuario,
-                        SYSDATE,
-                        prm_tipo_etapa);
-
-            COMMIT;
-            res := 'CORRECTOSe grab&oacute; correctamente el tr&aacute;mite';
+            RETURN 'La fecha no puede ser mayor a la actual';
         ELSE
-            res := 'Ya se encuentra registrado el tr&aacute;mite';
-        END IF;
+            IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
+            THEN
+                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
+            END IF;
 
-        RETURN res;
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_alcance b
+             WHERE       b.alc_fecha = TO_DATE (prm_fecha, 'dd/mm/yyyy')
+                     AND b.alc_proveedor = prm_proveedor
+                     AND b.alc_gestion = prm_gestion
+                     AND b.alc_tipo_tramite = prm_tipo_tramite
+                     AND b.alc_tipo_documento = prm_tipo_documento
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND b.ctl_control_id = prm_id;
+
+            IF existe = 0
+            THEN
+                v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+                v_numero := numero_control_alc (v_gestion);
+
+                INSERT INTO fis_alcance (alc_alcance_id,
+                                         alc_tipo_alcance,
+                                         alc_tipo_tramite,
+                                         alc_gestion,
+                                         alc_numero,
+                                         alc_fecha,
+                                         alc_proveedor,
+                                         alc_tipo_documento,
+                                         alc_num,
+                                         alc_lstope,
+                                         alc_usuario,
+                                         alc_fecsys,
+                                         ctl_control_id,
+                                         alc_tipo_etapa)
+                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                            'TRAMITE',
+                            prm_tipo_tramite,
+                            prm_gestion,
+                            0,
+                            TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                            prm_proveedor,
+                            prm_tipo_documento,
+                            0,
+                            'U',
+                            prm_usuario,
+                            SYSDATE,
+                            prm_id,
+                            prm_tipo_etapa);
+
+                INSERT INTO fis_alcance_item (alc_alcance_id,
+                                              ali_numero_item,
+                                              ali_obs_valor,
+                                              ali_obs_partida,
+                                              ali_obs_origen,
+                                              ali_num,
+                                              ali_lstope,
+                                              ali_usuario,
+                                              ali_fecsys,
+                                              ali_tipo_etapa)
+                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                            1,
+                            NULL,
+                            NULL,
+                            NULL,
+                            0,
+                            'U',
+                            prm_usuario,
+                            SYSDATE,
+                            prm_tipo_etapa);
+
+                COMMIT;
+                res :=
+                    'CORRECTOSe grab&oacute; correctamente el tr&aacute;mite';
+            ELSE
+                res := 'Ya se encuentra registrado el tr&aacute;mite';
+            END IF;
+
+            RETURN res;
+        END IF;
     EXCEPTION
         WHEN OTHERS
         THEN
@@ -9848,39 +9974,83 @@ AS
                                     SYSDATE,
                                     prm_tipo_etapa);
                     ELSE
-                        UPDATE   fis_alcance_item
-                           SET   ali_num = existe
-                         WHERE       alc_alcance_id = v_codigo
-                                 AND ali_numero_item = v_item
-                                 AND ali_num = 0;
+                        SELECT   b.ali_lstope
+                          INTO   res
+                          FROM   fis_alcance_item b
+                         WHERE       b.alc_alcance_id = v_codigo
+                                 AND b.ali_numero_item = v_item
+                                 AND b.ali_num = 0;
 
-                        INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                        a.ali_numero_item,
-                                                        a.ali_obs_valor,
-                                                        a.ali_obs_partida,
-                                                        a.ali_obs_origen,
-                                                        a.ali_num,
-                                                        a.ali_lstope,
-                                                        a.ali_usuario,
-                                                        a.ali_fecsys,
-                                                        a.ali_obs_otro,
-                                                        a.ali_tipo_etapa)
-                            SELECT   alc_alcance_id,
-                                     ali_numero_item,
-                                     ali_obs_valor,
-                                     'x',
-                                     ali_obs_origen,
-                                     0,
-                                     'U',
-                                     prm_usuario,
-                                     SYSDATE,
-                                     ali_obs_otro,
-                                     ali_tipo_etapa
-                              FROM   fis_alcance_item
+                        IF res = 'U'
+                        THEN
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
                              WHERE       alc_alcance_id = v_codigo
                                      AND ali_numero_item = v_item
-                                     AND ali_num = existe
-                                     AND ROWNUM = 1;
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         ali_obs_valor,
+                                         'x',
+                                         ali_obs_origen,
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         ali_obs_otro,
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        ELSE
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
+                             WHERE       alc_alcance_id = v_codigo
+                                     AND ali_numero_item = v_item
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         NULL,
+                                         'x',
+                                         NULL,
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         NULL,
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        END IF;
                     END IF;
                 END IF;
             END LOOP;
@@ -10048,39 +10218,83 @@ AS
                                     SYSDATE,
                                     prm_tipo_etapa);
                     ELSE
-                        UPDATE   fis_alcance_item
-                           SET   ali_num = existe
-                         WHERE       alc_alcance_id = v_codigo
-                                 AND ali_numero_item = v_item
-                                 AND ali_num = 0;
+                        SELECT   b.ali_lstope
+                          INTO   res
+                          FROM   fis_alcance_item b
+                         WHERE       b.alc_alcance_id = v_codigo
+                                 AND b.ali_numero_item = v_item
+                                 AND b.ali_num = 0;
 
-                        INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                        a.ali_numero_item,
-                                                        a.ali_obs_valor,
-                                                        a.ali_obs_partida,
-                                                        a.ali_obs_origen,
-                                                        a.ali_num,
-                                                        a.ali_lstope,
-                                                        a.ali_usuario,
-                                                        a.ali_fecsys,
-                                                        a.ali_obs_otro,
-                                                        a.ali_tipo_etapa)
-                            SELECT   alc_alcance_id,
-                                     ali_numero_item,
-                                     ali_obs_valor,
-                                     ali_obs_partida,
-                                     'x',
-                                     0,
-                                     'U',
-                                     prm_usuario,
-                                     SYSDATE,
-                                     ali_obs_otro,
-                                     ali_tipo_etapa
-                              FROM   fis_alcance_item
+                        IF res = 'U'
+                        THEN
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
                              WHERE       alc_alcance_id = v_codigo
                                      AND ali_numero_item = v_item
-                                     AND ali_num = existe
-                                     AND ROWNUM = 1;
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         ali_obs_valor,
+                                         ali_obs_partida,
+                                         'x',
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         ali_obs_otro,
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        ELSE
+                            UPDATE   fis_alcance_item
+                               SET   ali_num = existe
+                             WHERE       alc_alcance_id = v_codigo
+                                     AND ali_numero_item = v_item
+                                     AND ali_num = 0;
+
+                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                            a.ali_numero_item,
+                                                            a.ali_obs_valor,
+                                                            a.ali_obs_partida,
+                                                            a.ali_obs_origen,
+                                                            a.ali_num,
+                                                            a.ali_lstope,
+                                                            a.ali_usuario,
+                                                            a.ali_fecsys,
+                                                            a.ali_obs_otro,
+                                                            a.ali_tipo_etapa)
+                                SELECT   alc_alcance_id,
+                                         ali_numero_item,
+                                         NULL,
+                                         NULL,
+                                         'x',
+                                         0,
+                                         'U',
+                                         prm_usuario,
+                                         SYSDATE,
+                                         NULL,
+                                         ali_tipo_etapa
+                                  FROM   fis_alcance_item
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = existe
+                                         AND ROWNUM = 1;
+                        END IF;
                     END IF;
                 END IF;
 
@@ -10261,39 +10475,83 @@ AS
                                         SYSDATE,
                                         prm_tipo_etapa);
                         ELSE
-                            UPDATE   fis_alcance_item
-                               SET   ali_num = existe
-                             WHERE       alc_alcance_id = v_codigo
-                                     AND ali_numero_item = v_item
-                                     AND ali_num = 0;
+                            SELECT   b.ali_lstope
+                              INTO   res
+                              FROM   fis_alcance_item b
+                             WHERE       b.alc_alcance_id = v_codigo
+                                     AND b.ali_numero_item = v_item
+                                     AND b.ali_num = 0;
 
-                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                            a.ali_numero_item,
-                                                            a.ali_obs_valor,
-                                                            a.ali_obs_partida,
-                                                            a.ali_obs_origen,
-                                                            a.ali_num,
-                                                            a.ali_lstope,
-                                                            a.ali_usuario,
-                                                            a.ali_fecsys,
-                                                            a.ali_obs_otro,
-                                                            a.ali_tipo_etapa)
-                                SELECT   alc_alcance_id,
-                                         ali_numero_item,
-                                         'x',
-                                         ali_obs_partida,
-                                         ali_obs_origen,
-                                         0,
-                                         'U',
-                                         prm_usuario,
-                                         SYSDATE,
-                                         ali_obs_otro,
-                                         ali_tipo_etapa
-                                  FROM   fis_alcance_item
+                            IF res = 'U'
+                            THEN
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
                                  WHERE       alc_alcance_id = v_codigo
                                          AND ali_numero_item = v_item
-                                         AND ali_num = existe
-                                         AND ROWNUM = 1;
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                a.ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             'x',
+                                             ali_obs_partida,
+                                             ali_obs_origen,
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             ali_obs_otro,
+                                             ali_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            ELSE
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                a.ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             'x',
+                                             NULL,
+                                             NULL,
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             NULL,
+                                             ali_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            END IF;
                         END IF;
                     END IF;
 
@@ -10568,39 +10826,83 @@ AS
                                         'x',
                                         prm_tipo_etapa);
                         ELSE
-                            UPDATE   fis_alcance_item
-                               SET   ali_num = existe
-                             WHERE       alc_alcance_id = v_codigo
-                                     AND ali_numero_item = v_item
-                                     AND ali_num = 0;
+                            SELECT   b.ali_lstope
+                              INTO   res
+                              FROM   fis_alcance_item b
+                             WHERE       b.alc_alcance_id = v_codigo
+                                     AND b.ali_numero_item = v_item
+                                     AND b.ali_num = 0;
 
-                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                            a.ali_numero_item,
-                                                            a.ali_obs_valor,
-                                                            a.ali_obs_partida,
-                                                            a.ali_obs_origen,
-                                                            a.ali_num,
-                                                            a.ali_lstope,
-                                                            a.ali_usuario,
-                                                            a.ali_fecsys,
-                                                            a.ali_obs_otro,
-                                                            ali_tipo_etapa)
-                                SELECT   alc_alcance_id,
-                                         ali_numero_item,
-                                         ali_obs_valor,
-                                         ali_obs_partida,
-                                         ali_obs_origen,
-                                         0,
-                                         'U',
-                                         prm_usuario,
-                                         SYSDATE,
-                                         'x',
-                                         prm_tipo_etapa
-                                  FROM   fis_alcance_item
+                            IF res = 'U'
+                            THEN
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
                                  WHERE       alc_alcance_id = v_codigo
                                          AND ali_numero_item = v_item
-                                         AND ali_num = existe
-                                         AND ROWNUM = 1;
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             ali_obs_valor,
+                                             ali_obs_partida,
+                                             ali_obs_origen,
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             'x',
+                                             prm_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            ELSE
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             'x',
+                                             prm_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            END IF;
                         END IF;
                     END IF;
 
@@ -10781,39 +11083,83 @@ AS
                                         SYSDATE,
                                         prm_tipo_etapa);
                         ELSE
-                            UPDATE   fis_alcance_item
-                               SET   ali_num = existe
-                             WHERE       alc_alcance_id = v_codigo
-                                     AND ali_numero_item = v_item
-                                     AND ali_num = 0;
+                            SELECT   b.ali_lstope
+                              INTO   res
+                              FROM   fis_alcance_item b
+                             WHERE       b.alc_alcance_id = v_codigo
+                                     AND b.ali_numero_item = v_item
+                                     AND b.ali_num = 0;
 
-                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                            a.ali_numero_item,
-                                                            a.ali_obs_valor,
-                                                            a.ali_obs_partida,
-                                                            a.ali_obs_origen,
-                                                            a.ali_num,
-                                                            a.ali_lstope,
-                                                            a.ali_usuario,
-                                                            a.ali_fecsys,
-                                                            a.ali_obs_otro,
-                                                            a.ali_tipo_etapa)
-                                SELECT   alc_alcance_id,
-                                         ali_numero_item,
-                                         ali_obs_valor,
-                                         'x',
-                                         ali_obs_origen,
-                                         0,
-                                         'U',
-                                         prm_usuario,
-                                         SYSDATE,
-                                         ali_obs_otro,
-                                         ali_tipo_etapa
-                                  FROM   fis_alcance_item
+                            IF res = 'U'
+                            THEN
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
                                  WHERE       alc_alcance_id = v_codigo
                                          AND ali_numero_item = v_item
-                                         AND ali_num = existe
-                                         AND ROWNUM = 1;
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                a.ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             ali_obs_valor,
+                                             'x',
+                                             ali_obs_origen,
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             ali_obs_otro,
+                                             ali_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            ELSE
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                a.ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             NULL,
+                                             'x',
+                                             NULL,
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             NULL,
+                                             ali_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            END IF;
                         END IF;
                     END IF;
 
@@ -10996,39 +11342,83 @@ AS
                                         NULL,
                                         prm_tipo_etapa);
                         ELSE
-                            UPDATE   fis_alcance_item
-                               SET   ali_num = existe
-                             WHERE       alc_alcance_id = v_codigo
-                                     AND ali_numero_item = v_item
-                                     AND ali_num = 0;
+                            SELECT   b.ali_lstope
+                              INTO   res
+                              FROM   fis_alcance_item b
+                             WHERE       b.alc_alcance_id = v_codigo
+                                     AND b.ali_numero_item = v_item
+                                     AND b.ali_num = 0;
 
-                            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
-                                                            a.ali_numero_item,
-                                                            a.ali_obs_valor,
-                                                            a.ali_obs_partida,
-                                                            a.ali_obs_origen,
-                                                            a.ali_num,
-                                                            a.ali_lstope,
-                                                            a.ali_usuario,
-                                                            a.ali_fecsys,
-                                                            a.ali_obs_otro,
-                                                            ali_tipo_etapa)
-                                SELECT   alc_alcance_id,
-                                         ali_numero_item,
-                                         ali_obs_valor,
-                                         ali_obs_partida,
-                                         'x',
-                                         0,
-                                         'U',
-                                         prm_usuario,
-                                         SYSDATE,
-                                         ali_obs_otro,
-                                         ali_tipo_etapa
-                                  FROM   fis_alcance_item
+                            IF res = 'U'
+                            THEN
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
                                  WHERE       alc_alcance_id = v_codigo
                                          AND ali_numero_item = v_item
-                                         AND ali_num = existe
-                                         AND ROWNUM = 1;
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             ali_obs_valor,
+                                             ali_obs_partida,
+                                             'x',
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             ali_obs_otro,
+                                             ali_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            ELSE
+                                UPDATE   fis_alcance_item
+                                   SET   ali_num = existe
+                                 WHERE       alc_alcance_id = v_codigo
+                                         AND ali_numero_item = v_item
+                                         AND ali_num = 0;
+
+                                INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                                                a.ali_numero_item,
+                                                                a.ali_obs_valor,
+                                                                a.ali_obs_partida,
+                                                                a.ali_obs_origen,
+                                                                a.ali_num,
+                                                                a.ali_lstope,
+                                                                a.ali_usuario,
+                                                                a.ali_fecsys,
+                                                                a.ali_obs_otro,
+                                                                ali_tipo_etapa)
+                                    SELECT   alc_alcance_id,
+                                             ali_numero_item,
+                                             NULL,
+                                             NULL,
+                                             'x',
+                                             0,
+                                             'U',
+                                             prm_usuario,
+                                             SYSDATE,
+                                             NULL,
+                                             ali_tipo_etapa
+                                      FROM   fis_alcance_item
+                                     WHERE       alc_alcance_id = v_codigo
+                                             AND ali_numero_item = v_item
+                                             AND ali_num = existe
+                                             AND ROWNUM = 1;
+                            END IF;
                         END IF;
                     END IF;
 

@@ -172,7 +172,7 @@ IS
                             SYSDATE);
 
                 COMMIT;
-                RETURN 'CORRECTOe registr&oacute; correctamente la notificaci&oacute;n';
+                RETURN 'CORRECTOSe registr&oacute; correctamente la notificaci&oacute;n';
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
