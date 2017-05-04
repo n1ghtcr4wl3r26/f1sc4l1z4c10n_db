@@ -111,7 +111,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_seguimiento
-/* Formatted on 2-may.-2017 8:16:23 (QP5 v5.126) */
+/* Formatted on 3-may.-2017 20:27:11 (QP5 v5.126) */
 IS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -136,71 +136,76 @@ IS
         v_numero    NUMBER;
         v_fecreg    DATE;
     BEGIN
-        v_fecreg :=
-            TO_DATE (pkg_general.devuelve_fecha_registro (prm_id),
-                     'dd/mm/yyyy');
-
-        IF v_fecreg > TO_DATE (prm_fechanot, 'dd/mm/yyyy')
+        IF TO_DATE (prm_fechanot, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            RETURN 'La fecha de notificaci&oacute;n no puede ser menor a la fecha de registro '
-                   || TO_CHAR (v_fecreg, 'dd/mm/yyyy');
+            RETURN 'La fecha de notificaci&oacute;n no puede ser mayor a la actual';
         ELSE
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_notificacion a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.not_num = 0
-                     AND a.not_lstope = 'U';
+            v_fecreg :=
+                TO_DATE (pkg_general.devuelve_fecha_registro (prm_id),
+                         'dd/mm/yyyy');
 
-            IF existe = 0
+            IF v_fecreg > TO_DATE (prm_fechanot, 'dd/mm/yyyy')
             THEN
-                INSERT INTO fis_notificacion (ctl_control_id,
-                                              not_fecha_notificacion,
-                                              not_tipo_notificacion,
-                                              not_obs_notificacion,
-                                              not_num,
-                                              not_lstope,
-                                              not_usuario,
-                                              not_fecsys)
-                  VALUES   (prm_id,
-                            TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
-                            prm_tiponot,
-                            prm_obs,
-                            0,
-                            'U',
-                            prm_usuario,
-                            SYSDATE);
-
-                COMMIT;
-                RETURN 'CORRECTOSe registr&oacute; correctamente la notificaci&oacute;n';
+                RETURN 'La fecha de notificaci&oacute;n no puede ser menor a la fecha de registro '
+                       || TO_CHAR (v_fecreg, 'dd/mm/yyyy');
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
                   FROM   fis_notificacion a
-                 WHERE   a.ctl_control_id = prm_id;
+                 WHERE       a.ctl_control_id = prm_id
+                         AND a.not_num = 0
+                         AND a.not_lstope = 'U';
 
-                UPDATE   fis_notificacion
-                   SET   not_num = existe
-                 WHERE   ctl_control_id = prm_id AND not_num = 0;
+                IF existe = 0
+                THEN
+                    INSERT INTO fis_notificacion (ctl_control_id,
+                                                  not_fecha_notificacion,
+                                                  not_tipo_notificacion,
+                                                  not_obs_notificacion,
+                                                  not_num,
+                                                  not_lstope,
+                                                  not_usuario,
+                                                  not_fecsys)
+                      VALUES   (prm_id,
+                                TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
+                                prm_tiponot,
+                                prm_obs,
+                                0,
+                                'U',
+                                prm_usuario,
+                                SYSDATE);
 
-                INSERT INTO fis_notificacion (ctl_control_id,
-                                              not_fecha_notificacion,
-                                              not_tipo_notificacion,
-                                              not_obs_notificacion,
-                                              not_num,
-                                              not_lstope,
-                                              not_usuario,
-                                              not_fecsys)
-                  VALUES   (prm_id,
-                            TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
-                            prm_tiponot,
-                            prm_obs,
-                            0,
-                            'U',
-                            prm_usuario,
-                            SYSDATE);
+                    COMMIT;
+                    RETURN 'CORRECTOSe registr&oacute; correctamente la notificaci&oacute;n';
+                ELSE
+                    SELECT   COUNT (1)
+                      INTO   existe
+                      FROM   fis_notificacion a
+                     WHERE   a.ctl_control_id = prm_id;
 
-                RETURN 'CORRECTOSe modific&oacute; correctamente la notificaci&oacute;n';
+                    UPDATE   fis_notificacion
+                       SET   not_num = existe
+                     WHERE   ctl_control_id = prm_id AND not_num = 0;
+
+                    INSERT INTO fis_notificacion (ctl_control_id,
+                                                  not_fecha_notificacion,
+                                                  not_tipo_notificacion,
+                                                  not_obs_notificacion,
+                                                  not_num,
+                                                  not_lstope,
+                                                  not_usuario,
+                                                  not_fecsys)
+                      VALUES   (prm_id,
+                                TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
+                                prm_tiponot,
+                                prm_obs,
+                                0,
+                                'U',
+                                prm_usuario,
+                                SYSDATE);
+
+                    RETURN 'CORRECTOSe modific&oacute; correctamente la notificaci&oacute;n';
+                END IF;
             END IF;
         END IF;
     EXCEPTION
@@ -693,7 +698,8 @@ IS
                                         SELECT   COUNT (1)
                                           INTO   existe
                                           FROM   fis_resultados a
-                                         WHERE   a.alc_alcance_id = prm_idalcance
+                                         WHERE   a.alc_alcance_id =
+                                                     prm_idalcance
                                                  AND a.res_numero_item =
                                                         v_numero
                                                  AND a.res_num = 0
@@ -772,13 +778,15 @@ IS
                                             SELECT   COUNT (1)
                                               INTO   existe
                                               FROM   fis_resultados a
-                                             WHERE   a.alc_alcance_id = prm_idalcance
+                                             WHERE   a.alc_alcance_id =
+                                                         prm_idalcance
                                                      AND a.res_numero_item =
                                                             v_numero;
 
                                             UPDATE   fis_resultados
                                                SET   res_num = existe
-                                             WHERE   alc_alcance_id = prm_idalcance
+                                             WHERE   alc_alcance_id =
+                                                         prm_idalcance
                                                      AND res_numero_item =
                                                             v_numero
                                                      AND res_num = 0;
@@ -855,7 +863,7 @@ IS
                                     SELECT   COUNT (1)
                                       INTO   existe
                                       FROM   fis_resultados a
-                                     WHERE       a.alc_alcance_id = prm_idalcance
+                                     WHERE   a.alc_alcance_id = prm_idalcance
                                              AND a.res_numero_item = v_numero
                                              AND a.res_num = 0
                                              AND a.res_lstope = 'U';
@@ -931,13 +939,15 @@ IS
                                         SELECT   COUNT (1)
                                           INTO   existe
                                           FROM   fis_resultados a
-                                         WHERE   a.alc_alcance_id = prm_idalcance
+                                         WHERE   a.alc_alcance_id =
+                                                     prm_idalcance
                                                  AND a.res_numero_item =
                                                         v_numero;
 
                                         UPDATE   fis_resultados
                                            SET   res_num = existe
-                                         WHERE   alc_alcance_id = prm_idalcance
+                                         WHERE   alc_alcance_id =
+                                                     prm_idalcance
                                                  AND res_numero_item =
                                                         v_numero
                                                  AND res_num = 0;
@@ -1253,12 +1263,10 @@ IS
                      AND i.key_nber = v.key_nber
                      AND i.itm_nber = v.itm_nber
                      AND i.sad_num = v.sad_num
-
                      AND r.res_numero_item(+) = c.ali_numero_item
                      AND r.res_num(+) = 0
                      AND r.res_lstope(+) = 'U'
                      AND r.alc_alcance_id(+) = c.alc_alcance_id
-
                      AND i.key_year = ga.key_year
                      AND i.key_cuo = ga.key_cuo
                      AND i.key_dec = ga.key_dec
@@ -1365,12 +1373,10 @@ IS
                      AND i.key_nber = v.key_nber
                      AND i.itm_nber = v.itm_nber
                      AND i.sad_num = v.sad_num
-
                      AND r.res_numero_item(+) = c.ali_numero_item
                      AND r.res_num(+) = 0
                      AND r.res_lstope(+) = 'U'
                      AND r.alc_alcance_id(+) = c.alc_alcance_id
-
                      AND i.key_year = ga.key_year
                      AND i.key_cuo = ga.key_cuo
                      AND ga.key_dec IS NULL

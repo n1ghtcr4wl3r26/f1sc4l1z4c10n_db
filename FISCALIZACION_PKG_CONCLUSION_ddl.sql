@@ -123,7 +123,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_conclusion
-/* Formatted on 27-abr.-2017 7:33:19 (QP5 v5.126) */
+/* Formatted on 3-may.-2017 22:32:01 (QP5 v5.126) */
 IS
     FUNCTION devuelve_con_autoinicial (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -186,301 +186,396 @@ IS
         doc_con_num   VARCHAR2 (30) := '';
         doc_con_fec   VARCHAR2 (30) := '';
     BEGIN
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_conclusion a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.con_num = 0
-                 AND a.con_lstope = 'U';
-
-        IF existe = 1
+        IF NOT prm_fecha_informe IS NULL
+           AND TO_DATE (prm_fecha_informe, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            SELECT   a.con_tipo_doc_con
-              INTO   doc_con
-              FROM   fis_conclusion a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.con_num = 0
-                     AND a.con_lstope = 'U';
-
-            IF doc_con = 'AUTO INICIAL DE SUMARIO CONTRAVENCIONAL'
+            RETURN 'La fecha de informe t&eacute;cnico no puede ser mayor a la actual';
+        ELSE
+            IF NOT prm_fecha_notificacion IS NULL
+               AND TO_DATE (prm_fecha_notificacion, 'dd/mm/yyyy') >
+                      TRUNC (SYSDATE)
             THEN
-                SELECT   a.cas_numero_aisc,
-                         TO_CHAR (a.cas_fecha_notificacion, 'dd/mm/yyyy')
-                  INTO   doc_con_num, doc_con_fec
-                  FROM   fis_con_autoinicial a
-                 WHERE       a.cas_num = 0
-                         AND a.cas_lstope = 'U'
-                         AND a.ctl_control_id = prm_id;
-
-                IF NOT (prm_numero_aisc = doc_con_num
-                        AND prm_fecha_notificacion = doc_con_fec)
-                THEN
-                    RETURN 'No se puede modificar el n&uacute;mero o la fecha del auto inicial, porque ya fue registrado como documento de conclusi&oacute;n.';
-                END IF;
-            END IF;
-        END IF;
-
-        SELECT   est_estado
-          INTO   estado
-          FROM   fis_estado a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.est_num = 0
-                 AND a.est_lstope = 'U';
-
-        IF estado = 'REGISTRADO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_autoinicial a
-             WHERE       NOT a.ctl_control_id = prm_id
-                     AND a.cas_numero_informe = prm_numero_informe
-                     AND NOT prm_numero_informe IS NULL
-                     AND a.cas_num = 0
-                     AND a.cas_lstope = 'U';
-
-            IF existe > 0
-            THEN
-                RETURN    'El n&uacute;mero de informe '
-                       || prm_numero_informe
-                       || ' se encuentra duplicado en otra orden';
+                RETURN 'La fecha de notificaci&oacute;n no puede ser mayor a la actual';
             ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_autoinicial a
-                 WHERE       NOT a.ctl_control_id = prm_id
-                         AND a.cas_numero_aisc = prm_numero_aisc
-                         AND NOT prm_numero_aisc IS NULL
-                         AND a.cas_num = 0
-                         AND a.cas_lstope = 'U';
-
-                IF existe > 0
+                IF NOT prm_fecha_pres_descargos IS NULL
+                   AND TO_DATE (prm_fecha_pres_descargos, 'dd/mm/yyyy') >
+                          TRUNC (SYSDATE)
                 THEN
-                    RETURN 'El n&uacute;mero de Auto Inicial de Sumario Contravencional '
-                           || prm_numero_aisc
-                           || ' se encuentra duplicado en otra orden';
+                    RETURN 'La fecha de presentaci&oacute;n de descargos no puede ser mayor a la actual';
                 ELSE
-                    SELECT   COUNT (1)
-                      INTO   existe
-                      FROM   fis_con_autoinicial a
-                     WHERE       a.ctl_control_id = prm_id
-                             AND a.cas_num = 0
-                             AND a.cas_lstope = 'U';
-
-                    IF existe = 0
+                    IF NOT prm_fecha_inf_descargo IS NULL
+                       AND TO_DATE (prm_fecha_inf_descargo, 'dd/mm/yyyy') >
+                              TRUNC (SYSDATE)
                     THEN
-                        INSERT INTO fis_con_autoinicial (ctl_control_id,
-                                                         cas_numero_aisc,
-                                                         cas_fecha_notificacion,
-                                                         cas_fecha_pres_descargos,
-                                                         cas_inf_descargo,
-                                                         cas_fecha_inf_descargo,
-                                                         cas_numero_rfs,
-                                                         cas_fecha_rfs,
-                                                         cas_ci_remision_gr,
-                                                         cas_fecha_ci,
-                                                         cas_num,
-                                                         cas_lstope,
-                                                         cas_usuario,
-                                                         cas_fecsys,
-                                                         cas_numero_informe,
-                                                         cas_fecha_informe,
-                                                         cas_gerencia_legal)
-                          VALUES   (prm_id,
-                                    prm_numero_aisc,
-                                    TO_DATE (prm_fecha_notificacion,
-                                             'dd/mm/yyyy'),
-                                    TO_DATE (prm_fecha_pres_descargos,
-                                             'dd/mm/yyyy'),
-                                    prm_inf_descargo,
-                                    TO_DATE (prm_fecha_inf_descargo,
-                                             'dd/mm/yyyy'),
-                                    prm_numero_rfs,
-                                    TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy'),
-                                    prm_ci_remision_gr,
-                                    TO_DATE (prm_fecha_ci, 'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_gerencia_legal);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
-                        THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
-                            THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'AUTO INICIAL DE SUMARIO CONTRAVENCIONAL',
-                                            prm_numero_aisc,
-                                            TO_DATE (prm_fecha_notificacion,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
-                            END IF;
-                        END IF;
-
-                        COMMIT;
-                        RETURN 'CORRECTOSe registr&oacute; correctamente el Auto Inicial de Sumario Contravencional'
-;
+                        RETURN 'La fecha de informe de descargos no puede ser mayor a la actual';
                     ELSE
-                        SELECT   COUNT (1)
-                          INTO   existe
-                          FROM   fis_con_autoinicial a
-                         WHERE   a.ctl_control_id = prm_id;
-
-                        UPDATE   fis_con_autoinicial
-                           SET   cas_num = existe
-                         WHERE   ctl_control_id = prm_id AND cas_num = 0;
-
-                        INSERT INTO fis_con_autoinicial (ctl_control_id,
-                                                         cas_numero_aisc,
-                                                         cas_fecha_notificacion,
-                                                         cas_fecha_pres_descargos,
-                                                         cas_inf_descargo,
-                                                         cas_fecha_inf_descargo,
-                                                         cas_numero_rfs,
-                                                         cas_fecha_rfs,
-                                                         cas_ci_remision_gr,
-                                                         cas_fecha_ci,
-                                                         cas_num,
-                                                         cas_lstope,
-                                                         cas_usuario,
-                                                         cas_fecsys,
-                                                         cas_numero_informe,
-                                                         cas_fecha_informe,
-                                                         cas_gerencia_legal)
-                          VALUES   (prm_id,
-                                    prm_numero_aisc,
-                                    TO_DATE (prm_fecha_notificacion,
-                                             'dd/mm/yyyy'),
-                                    TO_DATE (prm_fecha_pres_descargos,
-                                             'dd/mm/yyyy'),
-                                    prm_inf_descargo,
-                                    TO_DATE (prm_fecha_inf_descargo,
-                                             'dd/mm/yyyy'),
-                                    prm_numero_rfs,
-                                    TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy'),
-                                    prm_ci_remision_gr,
-                                    TO_DATE (prm_fecha_ci, 'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_gerencia_legal);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
+                        IF NOT prm_fecha_rfs IS NULL
+                           AND TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy') >
+                                  TRUNC (SYSDATE)
                         THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
+                            RETURN 'La fecha de notificaci&oacute;n de la RFS no puede ser mayor a la actual';
+                        ELSE
+                            IF NOT prm_fecha_ci IS NULL
+                               AND TO_DATE (prm_fecha_ci, 'dd/mm/yyyy') >
+                                      TRUNC (SYSDATE)
                             THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'AUTO INICIAL DE SUMARIO CONTRAVENCIONAL',
-                                            prm_numero_aisc,
-                                            TO_DATE (prm_fecha_notificacion,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
+                                RETURN 'La fecha de la CI no puede ser mayor a la actual';
+                            ELSE
+                                IF NOT prm_fecha_rs IS NULL
+                                   AND TO_DATE (prm_fecha_rs, 'dd/mm/yyyy') >
+                                          TRUNC (SYSDATE)
+                                THEN
+                                    RETURN 'La fecha notificaci&oacute;n de la RS no puede ser mayor a la actual';
+                                ELSE
+                                    SELECT   COUNT (1)
+                                      INTO   existe
+                                      FROM   fis_conclusion a
+                                     WHERE       a.ctl_control_id = prm_id
+                                             AND a.con_num = 0
+                                             AND a.con_lstope = 'U';
+
+                                    IF existe = 1
+                                    THEN
+                                        SELECT   a.con_tipo_doc_con
+                                          INTO   doc_con
+                                          FROM   fis_conclusion a
+                                         WHERE   a.ctl_control_id = prm_id
+                                                 AND a.con_num = 0
+                                                 AND a.con_lstope = 'U';
+
+                                        IF doc_con =
+                                               'AUTO INICIAL DE SUMARIO CONTRAVENCIONAL'
+                                        THEN
+                                            SELECT   a.cas_numero_aisc,
+                                                     TO_CHAR (
+                                                         a.cas_fecha_notificacion,
+                                                         'dd/mm/yyyy')
+                                              INTO   doc_con_num, doc_con_fec
+                                              FROM   fis_con_autoinicial a
+                                             WHERE   a.cas_num = 0
+                                                     AND a.cas_lstope = 'U'
+                                                     AND a.ctl_control_id =
+                                                            prm_id;
+
+                                            IF NOT (prm_numero_aisc =
+                                                        doc_con_num
+                                                    AND prm_fecha_notificacion =
+                                                           doc_con_fec)
+                                            THEN
+                                                RETURN 'No se puede modificar el n&uacute;mero o la fecha del auto inicial, porque ya fue registrado como documento de conclusi&oacute;n.';
+                                            END IF;
+                                        END IF;
+                                    END IF;
+
+                                    SELECT   est_estado
+                                      INTO   estado
+                                      FROM   fis_estado a
+                                     WHERE       a.ctl_control_id = prm_id
+                                             AND a.est_num = 0
+                                             AND a.est_lstope = 'U';
+
+                                    IF estado = 'REGISTRADO'
+                                    THEN
+                                        SELECT   COUNT (1)
+                                          INTO   existe
+                                          FROM   fis_con_autoinicial a
+                                         WHERE   NOT a.ctl_control_id =
+                                                         prm_id
+                                                 AND a.cas_numero_informe =
+                                                        prm_numero_informe
+                                                 AND NOT prm_numero_informe IS NULL
+                                                 AND a.cas_num = 0
+                                                 AND a.cas_lstope = 'U';
+
+                                        IF existe > 0
+                                        THEN
+                                            RETURN 'El n&uacute;mero de informe '
+                                                   || prm_numero_informe
+                                                   || ' se encuentra duplicado en otra orden';
+                                        ELSE
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_con_autoinicial a
+                                             WHERE   NOT a.ctl_control_id =
+                                                             prm_id
+                                                     AND a.cas_numero_aisc =
+                                                            prm_numero_aisc
+                                                     AND NOT prm_numero_aisc IS NULL
+                                                     AND a.cas_num = 0
+                                                     AND a.cas_lstope = 'U';
+
+                                            IF existe > 0
+                                            THEN
+                                                RETURN 'El n&uacute;mero de Auto Inicial de Sumario Contravencional '
+                                                       || prm_numero_aisc
+                                                       || ' se encuentra duplicado en otra orden';
+                                            ELSE
+                                                SELECT   COUNT (1)
+                                                  INTO   existe
+                                                  FROM   fis_con_autoinicial a
+                                                 WHERE   a.ctl_control_id =
+                                                             prm_id
+                                                         AND a.cas_num = 0
+                                                         AND a.cas_lstope =
+                                                                'U';
+
+                                                IF existe = 0
+                                                THEN
+                                                    INSERT INTO fis_con_autoinicial (ctl_control_id,
+                                                                                     cas_numero_aisc,
+                                                                                     cas_fecha_notificacion,
+                                                                                     cas_fecha_pres_descargos,
+                                                                                     cas_inf_descargo,
+                                                                                     cas_fecha_inf_descargo,
+                                                                                     cas_numero_rfs,
+                                                                                     cas_fecha_rfs,
+                                                                                     cas_ci_remision_gr,
+                                                                                     cas_fecha_ci,
+                                                                                     cas_num,
+                                                                                     cas_lstope,
+                                                                                     cas_usuario,
+                                                                                     cas_fecsys,
+                                                                                     cas_numero_informe,
+                                                                                     cas_fecha_informe,
+                                                                                     cas_gerencia_legal)
+                                                      VALUES   (prm_id,
+                                                                prm_numero_aisc,
+                                                                TO_DATE (
+                                                                    prm_fecha_notificacion,
+                                                                    'dd/mm/yyyy'),
+                                                                TO_DATE (
+                                                                    prm_fecha_pres_descargos,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_inf_descargo,
+                                                                TO_DATE (
+                                                                    prm_fecha_inf_descargo,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_numero_rfs,
+                                                                TO_DATE (
+                                                                    prm_fecha_rfs,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_ci_remision_gr,
+                                                                TO_DATE (
+                                                                    prm_fecha_ci,
+                                                                    'dd/mm/yyyy'),
+                                                                0,
+                                                                'U',
+                                                                prm_usuario,
+                                                                SYSDATE,
+                                                                prm_numero_informe,
+                                                                TO_DATE (
+                                                                    prm_fecha_informe,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_gerencia_legal);
+
+                                                    IF prm_tipo_grabado =
+                                                           'CONCLUIR'
+                                                    THEN
+                                                        SELECT   COUNT (1)
+                                                          INTO   existe
+                                                          FROM   fis_conclusion a
+                                                         WHERE   a.ctl_control_id =
+                                                                     prm_id
+                                                                 AND a.con_num =
+                                                                        0
+                                                                 AND a.con_lstope =
+                                                                        'U';
+
+                                                        IF existe = 0
+                                                        THEN
+                                                            INSERT INTO fis_conclusion
+                                                              VALUES   (prm_id,
+                                                                        'AUTO INICIAL DE SUMARIO CONTRAVENCIONAL',
+                                                                        prm_numero_aisc,
+                                                                        TO_DATE (
+                                                                            prm_fecha_notificacion,
+                                                                            'dd/mm/yyyy'),
+                                                                        0,
+                                                                        'U',
+                                                                        prm_usuario,
+                                                                        SYSDATE);
+                                                        END IF;
+                                                    END IF;
+
+                                                    COMMIT;
+                                                    RETURN 'CORRECTOSe registr&oacute; correctamente el Auto Inicial de Sumario Contravencional'
+;
+                                                ELSE
+                                                    SELECT   COUNT (1)
+                                                      INTO   existe
+                                                      FROM   fis_con_autoinicial a
+                                                     WHERE   a.ctl_control_id =
+                                                                 prm_id;
+
+                                                    UPDATE   fis_con_autoinicial
+                                                       SET   cas_num = existe
+                                                     WHERE   ctl_control_id =
+                                                                 prm_id
+                                                             AND cas_num = 0;
+
+                                                    INSERT INTO fis_con_autoinicial (ctl_control_id,
+                                                                                     cas_numero_aisc,
+                                                                                     cas_fecha_notificacion,
+                                                                                     cas_fecha_pres_descargos,
+                                                                                     cas_inf_descargo,
+                                                                                     cas_fecha_inf_descargo,
+                                                                                     cas_numero_rfs,
+                                                                                     cas_fecha_rfs,
+                                                                                     cas_ci_remision_gr,
+                                                                                     cas_fecha_ci,
+                                                                                     cas_num,
+                                                                                     cas_lstope,
+                                                                                     cas_usuario,
+                                                                                     cas_fecsys,
+                                                                                     cas_numero_informe,
+                                                                                     cas_fecha_informe,
+                                                                                     cas_gerencia_legal)
+                                                      VALUES   (prm_id,
+                                                                prm_numero_aisc,
+                                                                TO_DATE (
+                                                                    prm_fecha_notificacion,
+                                                                    'dd/mm/yyyy'),
+                                                                TO_DATE (
+                                                                    prm_fecha_pres_descargos,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_inf_descargo,
+                                                                TO_DATE (
+                                                                    prm_fecha_inf_descargo,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_numero_rfs,
+                                                                TO_DATE (
+                                                                    prm_fecha_rfs,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_ci_remision_gr,
+                                                                TO_DATE (
+                                                                    prm_fecha_ci,
+                                                                    'dd/mm/yyyy'),
+                                                                0,
+                                                                'U',
+                                                                prm_usuario,
+                                                                SYSDATE,
+                                                                prm_numero_informe,
+                                                                TO_DATE (
+                                                                    prm_fecha_informe,
+                                                                    'dd/mm/yyyy'),
+                                                                prm_gerencia_legal);
+
+                                                    IF prm_tipo_grabado =
+                                                           'CONCLUIR'
+                                                    THEN
+                                                        SELECT   COUNT (1)
+                                                          INTO   existe
+                                                          FROM   fis_conclusion a
+                                                         WHERE   a.ctl_control_id =
+                                                                     prm_id
+                                                                 AND a.con_num =
+                                                                        0
+                                                                 AND a.con_lstope =
+                                                                        'U';
+
+                                                        IF existe = 0
+                                                        THEN
+                                                            INSERT INTO fis_conclusion
+                                                              VALUES   (prm_id,
+                                                                        'AUTO INICIAL DE SUMARIO CONTRAVENCIONAL',
+                                                                        prm_numero_aisc,
+                                                                        TO_DATE (
+                                                                            prm_fecha_notificacion,
+                                                                            'dd/mm/yyyy'),
+                                                                        0,
+                                                                        'U',
+                                                                        prm_usuario,
+                                                                        SYSDATE);
+                                                        END IF;
+                                                    END IF;
+
+                                                    RETURN 'CORRECTOSe modific&oacute;  correctamente el Auto Inicial de Sumario Contravencional'
+;
+                                                END IF;
+                                            END IF;
+                                        END IF;
+                                    END IF;
+
+                                    IF estado = 'CONCLUIDO'
+                                    THEN
+                                        SELECT   COUNT (1)
+                                          INTO   existe
+                                          FROM   fis_con_autoinicial a
+                                         WHERE   a.ctl_control_id = prm_id
+                                                 AND a.cas_num = 0
+                                                 AND a.cas_lstope = 'U';
+
+                                        IF existe = 0
+                                        THEN
+                                            RETURN 'No tiene registro de Auto Inicial de Sumario Contravencional';
+                                        ELSE
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_con_autoinicial a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id;
+
+                                            UPDATE   fis_con_autoinicial
+                                               SET   cas_num = existe
+                                             WHERE   ctl_control_id = prm_id
+                                                     AND cas_num = 0;
+
+                                            INSERT INTO fis_con_autoinicial (ctl_control_id,
+                                                                             cas_numero_aisc,
+                                                                             cas_fecha_notificacion,
+                                                                             cas_fecha_pres_descargos,
+                                                                             cas_inf_descargo,
+                                                                             cas_fecha_inf_descargo,
+                                                                             cas_numero_rfs,
+                                                                             cas_fecha_rfs,
+                                                                             cas_ci_remision_gr,
+                                                                             cas_fecha_ci,
+                                                                             cas_numero_rs,
+                                                                             cas_fecha_rs,
+                                                                             cas_num,
+                                                                             cas_lstope,
+                                                                             cas_usuario,
+                                                                             cas_fecsys,
+                                                                             cas_numero_informe,
+                                                                             cas_fecha_informe,
+                                                                             cas_gerencia_legal)
+                                                SELECT   prm_id,
+                                                         a.cas_numero_aisc,
+                                                         a.cas_fecha_notificacion,
+                                                         a.cas_fecha_pres_descargos,
+                                                         a.cas_inf_descargo,
+                                                         a.cas_fecha_inf_descargo,
+                                                         a.cas_numero_rfs,
+                                                         a.cas_fecha_rfs,
+                                                         a.cas_ci_remision_gr,
+                                                         a.cas_fecha_ci,
+                                                         prm_numero_rs,
+                                                         TO_DATE (prm_fecha_rs,'dd/mm/yyyy'),
+                                                         0,
+                                                         'U',
+                                                         prm_usuario,
+                                                         SYSDATE,
+                                                         a.cas_numero_informe,
+                                                         a.cas_fecha_informe,
+                                                         a.cas_gerencia_legal
+                                                  FROM   fis_con_autoinicial a
+                                                 WHERE   ctl_control_id =
+                                                             prm_id
+                                                         AND cas_num = existe;
+
+
+                                            RETURN 'CORRECTOSe modific&oacute; correctamente el Auto Inicial de Sumario Contravencional'
+;
+                                        END IF;
+                                    ELSE
+                                        RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
+                                    END IF;
+                                END IF;
                             END IF;
                         END IF;
-
-                        RETURN 'CORRECTOSe modific&oacute;  correctamente el Auto Inicial de Sumario Contravencional'
-;
                     END IF;
                 END IF;
             END IF;
-        END IF;
-
-        IF estado = 'CONCLUIDO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_autoinicial a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.cas_num = 0
-                     AND a.cas_lstope = 'U';
-
-            IF existe = 0
-            THEN
-                RETURN 'No tiene registro de Auto Inicial de Sumario Contravencional';
-            ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_autoinicial a
-                 WHERE   a.ctl_control_id = prm_id;
-
-                UPDATE   fis_con_autoinicial
-                   SET   cas_num = existe
-                 WHERE   ctl_control_id = prm_id AND cas_num = 0;
-
-                INSERT INTO fis_con_autoinicial (ctl_control_id,
-                                                 cas_numero_aisc,
-                                                 cas_fecha_notificacion,
-                                                 cas_fecha_pres_descargos,
-                                                 cas_inf_descargo,
-                                                 cas_fecha_inf_descargo,
-                                                 cas_numero_rfs,
-                                                 cas_fecha_rfs,
-                                                 cas_ci_remision_gr,
-                                                 cas_fecha_ci,
-                                                 cas_numero_rs,
-                                                 cas_fecha_rs,
-                                                 cas_num,
-                                                 cas_lstope,
-                                                 cas_usuario,
-                                                 cas_fecsys,
-                                                 cas_numero_informe,
-                                                 cas_fecha_informe,
-                                                 cas_gerencia_legal)
-                    SELECT   prm_id,
-                             a.cas_numero_aisc,
-                             a.cas_fecha_notificacion,
-                             a.cas_fecha_pres_descargos,
-                             a.cas_inf_descargo,
-                             a.cas_fecha_inf_descargo,
-                             a.cas_numero_rfs,
-                             a.cas_fecha_rfs,
-                             a.cas_ci_remision_gr,
-                             a.cas_fecha_ci,
-                             prm_numero_rs,
-                             TO_DATE (prm_fecha_rs, 'dd/mm/yyyy'),
-                             0,
-                             'U',
-                             prm_usuario,
-                             SYSDATE,
-                             a.cas_numero_informe,
-                             a.cas_fecha_informe,
-                             a.cas_gerencia_legal
-                      FROM   fis_con_autoinicial a
-                     WHERE   ctl_control_id = prm_id AND cas_num = existe;
-
-
-                RETURN 'CORRECTOSe modific&oacute; correctamente el Auto Inicial de Sumario Contravencional'
-;
-            END IF;
-        ELSE
-            RETURN 'LA FISCALIZACI&Oacute;N NO SE ENCUENTRA EN EL ESTADO CORRECTO';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -551,233 +646,276 @@ IS
         doc_con_num   VARCHAR2 (30) := '';
         doc_con_fec   VARCHAR2 (30) := '';
     BEGIN
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_conclusion a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.con_num = 0
-                 AND a.con_lstope = 'U';
-
-        IF existe = 1
+        IF NOT prm_fecha_informe IS NULL
+           AND TO_DATE (prm_fecha_informe, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            SELECT   a.con_tipo_doc_con
-              INTO   doc_con
-              FROM   fis_conclusion a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.con_num = 0
-                     AND a.con_lstope = 'U';
-
-            IF doc_con =
-                   'RESOLUCION ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO'
+            RETURN 'La fecha de informe t&eacute;cnico no puede ser mayor a la actual';
+        ELSE
+            IF NOT prm_fecha_pago_cuini IS NULL
+               AND TO_DATE (prm_fecha_pago_cuini, 'dd/mm/yyyy') >
+                      TRUNC (SYSDATE)
             THEN
-                SELECT   a.cra_numero_ra,
-                         TO_CHAR (a.cra_fecha_ra, 'dd/mm/yyyy')
-                  INTO   doc_con_num, doc_con_fec
-                  FROM   fis_con_resadmin a
-                 WHERE       a.cra_num = 0
-                         AND a.cra_lstope = 'U'
-                         AND a.ctl_control_id = prm_id;
-
-                IF NOT (prm_numero_ra = doc_con_num
-                        AND prm_fecha_ra = doc_con_fec)
-                THEN
-                    RETURN 'No se puede modificar el n&uacute;mero o la fecha de la resoluci&oacute;n administrativa, porque ya fue registrada como documento de conclusi&oacute;n.';
-                END IF;
-            END IF;
-        END IF;
-
-        SELECT   est_estado
-          INTO   estado
-          FROM   fis_estado a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.est_num = 0
-                 AND a.est_lstope = 'U';
-
-        IF estado = 'REGISTRADO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_resadmin a
-             WHERE       NOT a.ctl_control_id = prm_id
-                     AND a.cra_numero_informe = prm_numero_informe
-                     AND NOT prm_numero_informe IS NULL
-                     AND a.cra_num = 0
-                     AND a.cra_lstope = 'U';
-
-            IF existe > 0
-            THEN
-                RETURN    'El n&uacute;mero de informe '
-                       || prm_numero_informe
-                       || ' se encuentra duplicado en otra orden';
+                RETURN 'La fecha pago cuota inicial no puede ser mayor a la actual';
             ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_resadmin a
-                 WHERE       NOT a.ctl_control_id = prm_id
-                         AND a.cra_numero_ra = prm_numero_ra
-                         AND NOT prm_numero_ra IS NULL
-                         AND a.cra_num = 0
-                         AND a.cra_lstope = 'U';
-
-                IF existe > 0
+                IF NOT prm_fecha_ra IS NULL
+                   AND TO_DATE (prm_fecha_ra, 'dd/mm/yyyy') > TRUNC (SYSDATE)
                 THEN
-                    RETURN 'El n&uacute;mero de Resoluci&oacute;n Administrativa '
-                           || prm_numero_ra
-                           || ' se encuentra duplicado en otra orden';
+                    RETURN 'La fecha notificaci&oacute;n de la RA no puede ser mayor a la actual';
                 ELSE
-                    SELECT   COUNT (1)
-                      INTO   existe
-                      FROM   fis_con_resadmin a
-                     WHERE       a.ctl_control_id = prm_id
-                             AND a.cra_num = 0
-                             AND a.cra_lstope = 'U';
-
-                    IF existe = 0
+                    IF NOT prm_fecha_remision_set IS NULL
+                       AND TO_DATE (prm_fecha_remision_set, 'dd/mm/yyyy') >
+                              TRUNC (SYSDATE)
                     THEN
-                        INSERT INTO fis_con_resadmin (ctl_control_id,
-                                                      cra_fecha_pago_cuini,
-                                                      cra_monto_pago_cuoini,
-                                                      cra_numero_ra,
-                                                      cra_fecha_ra,
-                                                      cra_ci_remision_set,
-                                                      cra_fecha_remision_set,
-                                                      cra_saldo_por_cobrar,
-                                                      cra_num,
-                                                      cra_lstope,
-                                                      cra_usuario,
-                                                      cra_fecsys,
-                                                      cra_numero_informe,
-                                                      cra_fecha_informe,
-                                                      cra_rup_gestion,
-                                                      cra_rup_aduana,
-                                                      cra_rup_numero,
-                                                      cra_gerencia_legal)
-                          VALUES   (prm_id,
-                                    TO_DATE (prm_fecha_pago_cuini,
-                                             'dd/mm/yyyy'),
-                                    prm_monto_pago_cuoini,
-                                    prm_numero_ra,
-                                    TO_DATE (prm_fecha_ra, 'dd/mm/yyyy'),
-                                    prm_ci_remision_set,
-                                    TO_DATE (prm_fecha_remision_set,
-                                             'dd/mm/yyyy'),
-                                    prm_saldo_por_cobrar,
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_rup_gestion,
-                                    prm_rup_aduana,
-                                    prm_rup_numero,
-                                    prm_gerencia_legal);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
-                        THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
-                            THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'RESOLUCION ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO',
-                                            prm_numero_ra,
-                                            TO_DATE (prm_fecha_ra,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
-                            END IF;
-                        END IF;
-
-                        COMMIT;
-                        RETURN 'CORRECTOSe registr&oacute; correctamente la Resoluci&oacute;n Administrativa';
+                        RETURN 'La fecha de comunicaci&oacute;n interna de remisi&oacute;n a la SET no puede ser mayor a la actual';
                     ELSE
                         SELECT   COUNT (1)
                           INTO   existe
-                          FROM   fis_con_resadmin a
-                         WHERE   a.ctl_control_id = prm_id;
+                          FROM   fis_conclusion a
+                         WHERE       a.ctl_control_id = prm_id
+                                 AND a.con_num = 0
+                                 AND a.con_lstope = 'U';
 
-                        UPDATE   fis_con_resadmin
-                           SET   cra_num = existe
-                         WHERE   ctl_control_id = prm_id AND cra_num = 0;
-
-                        INSERT INTO fis_con_resadmin (ctl_control_id,
-                                                      cra_fecha_pago_cuini,
-                                                      cra_monto_pago_cuoini,
-                                                      cra_numero_ra,
-                                                      cra_fecha_ra,
-                                                      cra_ci_remision_set,
-                                                      cra_fecha_remision_set,
-                                                      cra_saldo_por_cobrar,
-                                                      cra_num,
-                                                      cra_lstope,
-                                                      cra_usuario,
-                                                      cra_fecsys,
-                                                      cra_numero_informe,
-                                                      cra_fecha_informe,
-                                                      cra_rup_gestion,
-                                                      cra_rup_aduana,
-                                                      cra_rup_numero,
-                                                      cra_gerencia_legal)
-                          VALUES   (prm_id,
-                                    TO_DATE (prm_fecha_pago_cuini,
-                                             'dd/mm/yyyy'),
-                                    prm_monto_pago_cuoini,
-                                    prm_numero_ra,
-                                    TO_DATE (prm_fecha_ra, 'dd/mm/yyyy'),
-                                    prm_ci_remision_set,
-                                    TO_DATE (prm_fecha_remision_set,
-                                             'dd/mm/yyyy'),
-                                    prm_saldo_por_cobrar,
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_rup_gestion,
-                                    prm_rup_aduana,
-                                    prm_rup_numero,
-                                    prm_gerencia_legal);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
+                        IF existe = 1
                         THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
+                            SELECT   a.con_tipo_doc_con
+                              INTO   doc_con
                               FROM   fis_conclusion a
                              WHERE       a.ctl_control_id = prm_id
                                      AND a.con_num = 0
                                      AND a.con_lstope = 'U';
 
-                            IF existe = 0
+                            IF doc_con =
+                                   'RESOLUCION ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO'
                             THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'RESOLUCION ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO',
-                                            prm_numero_ra,
-                                            TO_DATE (prm_fecha_ra,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
+                                SELECT   a.cra_numero_ra,
+                                         TO_CHAR (a.cra_fecha_ra,
+                                                  'dd/mm/yyyy')
+                                  INTO   doc_con_num, doc_con_fec
+                                  FROM   fis_con_resadmin a
+                                 WHERE       a.cra_num = 0
+                                         AND a.cra_lstope = 'U'
+                                         AND a.ctl_control_id = prm_id;
+
+                                IF NOT (prm_numero_ra = doc_con_num
+                                        AND prm_fecha_ra = doc_con_fec)
+                                THEN
+                                    RETURN 'No se puede modificar el n&uacute;mero o la fecha de la resoluci&oacute;n administrativa, porque ya fue registrada como documento de conclusi&oacute;n.';
+                                END IF;
                             END IF;
                         END IF;
 
-                        RETURN 'CORRECTOSe modific&oacute; correctamente la Resoluci&oacute;n Administrativa';
+                        SELECT   est_estado
+                          INTO   estado
+                          FROM   fis_estado a
+                         WHERE       a.ctl_control_id = prm_id
+                                 AND a.est_num = 0
+                                 AND a.est_lstope = 'U';
+
+                        IF estado = 'REGISTRADO'
+                        THEN
+                            SELECT   COUNT (1)
+                              INTO   existe
+                              FROM   fis_con_resadmin a
+                             WHERE   NOT a.ctl_control_id = prm_id
+                                     AND a.cra_numero_informe =
+                                            prm_numero_informe
+                                     AND NOT prm_numero_informe IS NULL
+                                     AND a.cra_num = 0
+                                     AND a.cra_lstope = 'U';
+
+                            IF existe > 0
+                            THEN
+                                RETURN 'El n&uacute;mero de informe '
+                                       || prm_numero_informe
+                                       || ' se encuentra duplicado en otra orden';
+                            ELSE
+                                SELECT   COUNT (1)
+                                  INTO   existe
+                                  FROM   fis_con_resadmin a
+                                 WHERE       NOT a.ctl_control_id = prm_id
+                                         AND a.cra_numero_ra = prm_numero_ra
+                                         AND NOT prm_numero_ra IS NULL
+                                         AND a.cra_num = 0
+                                         AND a.cra_lstope = 'U';
+
+                                IF existe > 0
+                                THEN
+                                    RETURN 'El n&uacute;mero de Resoluci&oacute;n Administrativa '
+                                           || prm_numero_ra
+                                           || ' se encuentra duplicado en otra orden';
+                                ELSE
+                                    SELECT   COUNT (1)
+                                      INTO   existe
+                                      FROM   fis_con_resadmin a
+                                     WHERE       a.ctl_control_id = prm_id
+                                             AND a.cra_num = 0
+                                             AND a.cra_lstope = 'U';
+
+                                    IF existe = 0
+                                    THEN
+                                        INSERT INTO fis_con_resadmin (ctl_control_id,
+                                                                      cra_fecha_pago_cuini,
+                                                                      cra_monto_pago_cuoini,
+                                                                      cra_numero_ra,
+                                                                      cra_fecha_ra,
+                                                                      cra_ci_remision_set,
+                                                                      cra_fecha_remision_set,
+                                                                      cra_saldo_por_cobrar,
+                                                                      cra_num,
+                                                                      cra_lstope,
+                                                                      cra_usuario,
+                                                                      cra_fecsys,
+                                                                      cra_numero_informe,
+                                                                      cra_fecha_informe,
+                                                                      cra_rup_gestion,
+                                                                      cra_rup_aduana,
+                                                                      cra_rup_numero,
+                                                                      cra_gerencia_legal)
+                                          VALUES   (prm_id,
+                                                    TO_DATE (
+                                                        prm_fecha_pago_cuini,
+                                                        'dd/mm/yyyy'),
+                                                    prm_monto_pago_cuoini,
+                                                    prm_numero_ra,
+                                                    TO_DATE (prm_fecha_ra,
+                                                             'dd/mm/yyyy'),
+                                                    prm_ci_remision_set,
+                                                    TO_DATE (
+                                                        prm_fecha_remision_set,
+                                                        'dd/mm/yyyy'),
+                                                    prm_saldo_por_cobrar,
+                                                    0,
+                                                    'U',
+                                                    prm_usuario,
+                                                    SYSDATE,
+                                                    prm_numero_informe,
+                                                    TO_DATE (
+                                                        prm_fecha_informe,
+                                                        'dd/mm/yyyy'),
+                                                    prm_rup_gestion,
+                                                    prm_rup_aduana,
+                                                    prm_rup_numero,
+                                                    prm_gerencia_legal);
+
+                                        IF prm_tipo_grabado = 'CONCLUIR'
+                                        THEN
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_conclusion a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id
+                                                     AND a.con_num = 0
+                                                     AND a.con_lstope = 'U';
+
+                                            IF existe = 0
+                                            THEN
+                                                INSERT INTO fis_conclusion
+                                                  VALUES   (prm_id,
+                                                            'RESOLUCION ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO',
+                                                            prm_numero_ra,
+                                                            TO_DATE (
+                                                                prm_fecha_ra,
+                                                                'dd/mm/yyyy'),
+                                                            0,
+                                                            'U',
+                                                            prm_usuario,
+                                                            SYSDATE);
+                                            END IF;
+                                        END IF;
+
+                                        COMMIT;
+                                        RETURN 'CORRECTOSe registr&oacute; correctamente la Resoluci&oacute;n Administrativa';
+                                    ELSE
+                                        SELECT   COUNT (1)
+                                          INTO   existe
+                                          FROM   fis_con_resadmin a
+                                         WHERE   a.ctl_control_id = prm_id;
+
+                                        UPDATE   fis_con_resadmin
+                                           SET   cra_num = existe
+                                         WHERE   ctl_control_id = prm_id
+                                                 AND cra_num = 0;
+
+                                        INSERT INTO fis_con_resadmin (ctl_control_id,
+                                                                      cra_fecha_pago_cuini,
+                                                                      cra_monto_pago_cuoini,
+                                                                      cra_numero_ra,
+                                                                      cra_fecha_ra,
+                                                                      cra_ci_remision_set,
+                                                                      cra_fecha_remision_set,
+                                                                      cra_saldo_por_cobrar,
+                                                                      cra_num,
+                                                                      cra_lstope,
+                                                                      cra_usuario,
+                                                                      cra_fecsys,
+                                                                      cra_numero_informe,
+                                                                      cra_fecha_informe,
+                                                                      cra_rup_gestion,
+                                                                      cra_rup_aduana,
+                                                                      cra_rup_numero,
+                                                                      cra_gerencia_legal)
+                                          VALUES   (prm_id,
+                                                    TO_DATE (
+                                                        prm_fecha_pago_cuini,
+                                                        'dd/mm/yyyy'),
+                                                    prm_monto_pago_cuoini,
+                                                    prm_numero_ra,
+                                                    TO_DATE (prm_fecha_ra,
+                                                             'dd/mm/yyyy'),
+                                                    prm_ci_remision_set,
+                                                    TO_DATE (
+                                                        prm_fecha_remision_set,
+                                                        'dd/mm/yyyy'),
+                                                    prm_saldo_por_cobrar,
+                                                    0,
+                                                    'U',
+                                                    prm_usuario,
+                                                    SYSDATE,
+                                                    prm_numero_informe,
+                                                    TO_DATE (
+                                                        prm_fecha_informe,
+                                                        'dd/mm/yyyy'),
+                                                    prm_rup_gestion,
+                                                    prm_rup_aduana,
+                                                    prm_rup_numero,
+                                                    prm_gerencia_legal);
+
+                                        IF prm_tipo_grabado = 'CONCLUIR'
+                                        THEN
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_conclusion a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id
+                                                     AND a.con_num = 0
+                                                     AND a.con_lstope = 'U';
+
+                                            IF existe = 0
+                                            THEN
+                                                INSERT INTO fis_conclusion
+                                                  VALUES   (prm_id,
+                                                            'RESOLUCION ADMINISTRATIVA Y DETERMINATIVA DE FACILIDADES DE PAGO',
+                                                            prm_numero_ra,
+                                                            TO_DATE (
+                                                                prm_fecha_ra,
+                                                                'dd/mm/yyyy'),
+                                                            0,
+                                                            'U',
+                                                            prm_usuario,
+                                                            SYSDATE);
+                                            END IF;
+                                        END IF;
+
+                                        RETURN 'CORRECTOSe modific&oacute; correctamente la Resoluci&oacute;n Administrativa';
+                                    END IF;
+                                END IF;
+                            END IF;
+                        ELSE
+                            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
+                        END IF;
                     END IF;
                 END IF;
             END IF;
-        ELSE
-            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -856,332 +994,453 @@ IS
         doc_con_num   VARCHAR2 (30) := '';
         doc_con_fec   VARCHAR2 (30) := '';
     BEGIN
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_conclusion a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.con_num = 0
-                 AND a.con_lstope = 'U';
-
-        IF existe = 1
+        IF NOT prm_fecha_notificacion IS NULL
+           AND TO_DATE (prm_fecha_notificacion, 'dd/mm/yyyy') >
+                  TRUNC (SYSDATE)
         THEN
-            SELECT   a.con_tipo_doc_con
-              INTO   doc_con
-              FROM   fis_conclusion a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.con_num = 0
-                     AND a.con_lstope = 'U';
-
-            IF doc_con = 'VISTA DE CARGO'
+            RETURN 'La fecha de la notificaci&oacute;n no puede ser mayor a la actual';
+        ELSE
+            IF NOT prm_fecha_presentacion IS NULL
+               AND TO_DATE (prm_fecha_presentacion, 'dd/mm/yyyy') >
+                      TRUNC (SYSDATE)
             THEN
-                SELECT   a.cvc_numero_vc,
-                         TO_CHAR (a.cvc_fecha_vc, 'dd/mm/yyyy')
-                  INTO   doc_con_num, doc_con_fec
-                  FROM   fis_con_viscargo a
-                 WHERE       a.cvc_num = 0
-                         AND a.cvc_lstope = 'U'
-                         AND a.ctl_control_id = prm_id;
-
-                IF NOT (prm_numero_vc = doc_con_num
-                        AND prm_fecha_vc = doc_con_fec)
-                THEN
-                    RETURN 'No se puede modificar el numero o la fecha de la vista de cargo, porque ya fue registrada como documento de conclusi&oacute;n.';
-                END IF;
-            END IF;
-        END IF;
-
-
-        SELECT   est_estado
-          INTO   estado
-          FROM   fis_estado a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.est_num = 0
-                 AND a.est_lstope = 'U';
-
-        IF estado = 'REGISTRADO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_viscargo a
-             WHERE       NOT a.ctl_control_id = prm_id
-                     AND a.cvc_numero_informe = prm_numero_informe
-                     AND NOT prm_numero_informe IS NULL
-                     AND a.cvc_num = 0
-                     AND a.cvc_lstope = 'U';
-
-            IF existe > 0
-            THEN
-                RETURN    'El n&uacute;mero de informe '
-                       || prm_numero_informe
-                       || ' se encuentra duplicado en otra orden';
+                RETURN 'La fecha de presentaci&oacute;n de descargos no puede ser mayor a la actual';
             ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_viscargo a
-                 WHERE       NOT a.ctl_control_id = prm_id
-                         AND a.cvc_numero_vc = prm_numero_vc
-                         AND NOT prm_numero_vc IS NULL
-                         AND a.cvc_num = 0
-                         AND a.cvc_lstope = 'U';
-
-                IF existe > 0
+                IF NOT prm_fecha_descargo IS NULL
+                   AND TO_DATE (prm_fecha_descargo, 'dd/mm/yyyy') >
+                          TRUNC (SYSDATE)
                 THEN
-                    RETURN    'El n&uacute;ero de Vista de Cargo '
-                           || prm_numero_vc
-                           || ' se encuentra duplicado en otra orden';
+                    RETURN 'La fecha informe de descargos no puede ser mayor a la actual';
                 ELSE
-                    SELECT   COUNT (1)
-                      INTO   existe
-                      FROM   fis_con_viscargo a
-                     WHERE       a.ctl_control_id = prm_id
-                             AND a.cvc_num = 0
-                             AND a.cvc_lstope = 'U';
-
-                    IF existe = 0
+                    IF NOT prm_fecha_not_rd_final IS NULL
+                       AND TO_DATE (prm_fecha_not_rd_final, 'dd/mm/yyyy') >
+                              TRUNC (SYSDATE)
                     THEN
-                        INSERT INTO fis_con_viscargo (ctl_control_id,
-                                                      cvc_tipo_notificacion,
-                                                      cvc_fecha_notificacion,
-                                                      cvc_fecha_presentacion,
-                                                      cvc_inf_descargo,
-                                                      cvc_fecha_descargo,
-                                                      cvc_rd_final,
-                                                      cvc_fecha_not_rd_final,
-                                                      cvc_ci_remision,
-                                                      cvc_fecha_ci_remision,
-                                                      cvc_numero_rd,
-                                                      cvc_fecha_rd,
-                                                      cvc_num,
-                                                      cvc_lstope,
-                                                      cvc_usuario,
-                                                      cvc_fecsys,
-                                                      cvc_numero_informe,
-                                                      cvc_fecha_informe,
-                                                      cvc_numero_vc,
-                                                      cvc_fecha_vc,
-                                                      cvc_tipo_rd,
-                                                      cvc_gerencia_legal)
-                          VALUES   (prm_id,
-                                    prm_tipo_notificacion,
-                                    TO_DATE (prm_fecha_notificacion,
-                                             'dd/mm/yyyy'),
-                                    TO_DATE (prm_fecha_presentacion,
-                                             'dd/mm/yyyy'),
-                                    prm_inf_descargo,
-                                    TO_DATE (prm_fecha_descargo,
-                                             'dd/mm/yyyy'),
-                                    prm_rd_final,
-                                    TO_DATE (prm_fecha_not_rd_final,
-                                             'dd/mm/yyyy'),
-                                    prm_ci_remision,
-                                    TO_DATE (prm_fecha_ci_remision,
-                                             'dd/mm/yyyy'),
-                                    prm_numero_rd,
-                                    TO_DATE (prm_fecha_rd, 'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_numero_vc,
-                                    TO_DATE (prm_fecha_vc, 'dd/mm/yyyy'),
-                                    prm_tipo_rd,
-                                    prm_gerencia_legal);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
-                        THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
-                            THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'VISTA DE CARGO',
-                                            prm_numero_vc,
-                                            TO_DATE (prm_fecha_vc,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
-                            END IF;
-                        END IF;
-
-                        COMMIT;
-                        RETURN 'CORRECTOe registr&oacute; correctamente la Vista de Cargo';
+                        RETURN 'La fecha de notificaci&oacute;n de la RD no puede ser mayor a la actual';
                     ELSE
-                        SELECT   COUNT (1)
-                          INTO   existe
-                          FROM   fis_con_viscargo a
-                         WHERE   a.ctl_control_id = prm_id;
-
-                        UPDATE   fis_con_viscargo
-                           SET   cvc_num = existe
-                         WHERE   ctl_control_id = prm_id AND cvc_num = 0;
-
-                        INSERT INTO fis_con_viscargo (ctl_control_id,
-                                                      cvc_tipo_notificacion,
-                                                      cvc_fecha_notificacion,
-                                                      cvc_fecha_presentacion,
-                                                      cvc_inf_descargo,
-                                                      cvc_fecha_descargo,
-                                                      cvc_rd_final,
-                                                      cvc_fecha_not_rd_final,
-                                                      cvc_ci_remision,
-                                                      cvc_fecha_ci_remision,
-                                                      cvc_numero_rd,
-                                                      cvc_fecha_rd,
-                                                      cvc_num,
-                                                      cvc_lstope,
-                                                      cvc_usuario,
-                                                      cvc_fecsys,
-                                                      cvc_numero_informe,
-                                                      cvc_fecha_informe,
-                                                      cvc_numero_vc,
-                                                      cvc_fecha_vc,
-                                                      cvc_tipo_rd,
-                                                      cvc_gerencia_legal)
-                          VALUES   (prm_id,
-                                    prm_tipo_notificacion,
-                                    TO_DATE (prm_fecha_notificacion,
-                                             'dd/mm/yyyy'),
-                                    TO_DATE (prm_fecha_presentacion,
-                                             'dd/mm/yyyy'),
-                                    prm_inf_descargo,
-                                    TO_DATE (prm_fecha_descargo,
-                                             'dd/mm/yyyy'),
-                                    prm_rd_final,
-                                    TO_DATE (prm_fecha_not_rd_final,
-                                             'dd/mm/yyyy'),
-                                    prm_ci_remision,
-                                    TO_DATE (prm_fecha_ci_remision,
-                                             'dd/mm/yyyy'),
-                                    prm_numero_rd,
-                                    TO_DATE (prm_fecha_rd, 'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_numero_vc,
-                                    TO_DATE (prm_fecha_vc, 'dd/mm/yyyy'),
-                                    prm_tipo_rd,
-                                    prm_gerencia_legal);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
+                        IF NOT prm_fecha_ci_remision IS NULL
+                           AND TO_DATE (prm_fecha_ci_remision, 'dd/mm/yyyy') >
+                                  TRUNC (SYSDATE)
                         THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
+                            RETURN 'La fecha de la CI de remisi&oacute;n a la GR no puede ser mayor a la actual';
+                        ELSE
+                            IF NOT prm_fecha_rd IS NULL
+                               AND TO_DATE (prm_fecha_rd, 'dd/mm/yyyy') >
+                                      TRUNC (SYSDATE)
                             THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'VISTA DE CARGO',
-                                            prm_numero_vc,
-                                            TO_DATE (prm_fecha_vc,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
+                                RETURN 'La fecha de la rd no puede ser mayor a la actual';
+                            ELSE
+                                IF NOT prm_fecha_informe IS NULL
+                                   AND TO_DATE (prm_fecha_informe,
+                                                'dd/mm/yyyy') >
+                                          TRUNC (SYSDATE)
+                                THEN
+                                    RETURN 'La fecha de informe t&eacute;cnico no puede ser mayor a la actual';
+                                ELSE
+                                    IF NOT prm_fecha_vc IS NULL
+                                       AND TO_DATE (prm_fecha_vc,
+                                                    'dd/mm/yyyy') >
+                                              TRUNC (SYSDATE)
+                                    THEN
+                                        RETURN 'La fecha de Vista de Cargo no puede ser mayor a la actual';
+                                    ELSE
+                                        SELECT   COUNT (1)
+                                          INTO   existe
+                                          FROM   fis_conclusion a
+                                         WHERE   a.ctl_control_id = prm_id
+                                                 AND a.con_num = 0
+                                                 AND a.con_lstope = 'U';
+
+                                        IF existe = 1
+                                        THEN
+                                            SELECT   a.con_tipo_doc_con
+                                              INTO   doc_con
+                                              FROM   fis_conclusion a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id
+                                                     AND a.con_num = 0
+                                                     AND a.con_lstope = 'U';
+
+                                            IF doc_con = 'VISTA DE CARGO'
+                                            THEN
+                                                SELECT   a.cvc_numero_vc,
+                                                         TO_CHAR (
+                                                             a.cvc_fecha_vc,
+                                                             'dd/mm/yyyy')
+                                                  INTO   doc_con_num,
+                                                         doc_con_fec
+                                                  FROM   fis_con_viscargo a
+                                                 WHERE   a.cvc_num = 0
+                                                         AND a.cvc_lstope =
+                                                                'U'
+                                                         AND a.ctl_control_id =
+                                                                prm_id;
+
+                                                IF NOT (prm_numero_vc =
+                                                            doc_con_num
+                                                        AND prm_fecha_vc =
+                                                               doc_con_fec)
+                                                THEN
+                                                    RETURN 'No se puede modificar el numero o la fecha de la vista de cargo, porque ya fue registrada como documento de conclusi&oacute;n.';
+                                                END IF;
+                                            END IF;
+                                        END IF;
+
+
+                                        SELECT   est_estado
+                                          INTO   estado
+                                          FROM   fis_estado a
+                                         WHERE   a.ctl_control_id = prm_id
+                                                 AND a.est_num = 0
+                                                 AND a.est_lstope = 'U';
+
+                                        IF estado = 'REGISTRADO'
+                                        THEN
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_con_viscargo a
+                                             WHERE   NOT a.ctl_control_id =
+                                                             prm_id
+                                                     AND a.cvc_numero_informe =
+                                                            prm_numero_informe
+                                                     AND NOT prm_numero_informe IS NULL
+                                                     AND a.cvc_num = 0
+                                                     AND a.cvc_lstope = 'U';
+
+                                            IF existe > 0
+                                            THEN
+                                                RETURN 'El n&uacute;mero de informe '
+                                                       || prm_numero_informe
+                                                       || ' se encuentra duplicado en otra orden';
+                                            ELSE
+                                                SELECT   COUNT (1)
+                                                  INTO   existe
+                                                  FROM   fis_con_viscargo a
+                                                 WHERE   NOT a.ctl_control_id =
+                                                                 prm_id
+                                                         AND a.cvc_numero_vc =
+                                                                prm_numero_vc
+                                                         AND NOT prm_numero_vc IS NULL
+                                                         AND a.cvc_num = 0
+                                                         AND a.cvc_lstope =
+                                                                'U';
+
+                                                IF existe > 0
+                                                THEN
+                                                    RETURN 'El n&uacute;ero de Vista de Cargo '
+                                                           || prm_numero_vc
+                                                           || ' se encuentra duplicado en otra orden';
+                                                ELSE
+                                                    SELECT   COUNT (1)
+                                                      INTO   existe
+                                                      FROM   fis_con_viscargo a
+                                                     WHERE   a.ctl_control_id =
+                                                                 prm_id
+                                                             AND a.cvc_num =
+                                                                    0
+                                                             AND a.cvc_lstope =
+                                                                    'U';
+
+                                                    IF existe = 0
+                                                    THEN
+                                                        INSERT INTO fis_con_viscargo (ctl_control_id,
+                                                                                      cvc_tipo_notificacion,
+                                                                                      cvc_fecha_notificacion,
+                                                                                      cvc_fecha_presentacion,
+                                                                                      cvc_inf_descargo,
+                                                                                      cvc_fecha_descargo,
+                                                                                      cvc_rd_final,
+                                                                                      cvc_fecha_not_rd_final,
+                                                                                      cvc_ci_remision,
+                                                                                      cvc_fecha_ci_remision,
+                                                                                      cvc_numero_rd,
+                                                                                      cvc_fecha_rd,
+                                                                                      cvc_num,
+                                                                                      cvc_lstope,
+                                                                                      cvc_usuario,
+                                                                                      cvc_fecsys,
+                                                                                      cvc_numero_informe,
+                                                                                      cvc_fecha_informe,
+                                                                                      cvc_numero_vc,
+                                                                                      cvc_fecha_vc,
+                                                                                      cvc_tipo_rd,
+                                                                                      cvc_gerencia_legal)
+                                                          VALUES   (prm_id,
+                                                                    prm_tipo_notificacion,
+                                                                    TO_DATE (
+                                                                        prm_fecha_notificacion,
+                                                                        'dd/mm/yyyy'),
+                                                                    TO_DATE (
+                                                                        prm_fecha_presentacion,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_inf_descargo,
+                                                                    TO_DATE (
+                                                                        prm_fecha_descargo,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_rd_final,
+                                                                    TO_DATE (
+                                                                        prm_fecha_not_rd_final,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_ci_remision,
+                                                                    TO_DATE (
+                                                                        prm_fecha_ci_remision,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_rd,
+                                                                    TO_DATE (
+                                                                        prm_fecha_rd,
+                                                                        'dd/mm/yyyy'),
+                                                                    0,
+                                                                    'U',
+                                                                    prm_usuario,
+                                                                    SYSDATE,
+                                                                    prm_numero_informe,
+                                                                    TO_DATE (
+                                                                        prm_fecha_informe,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_vc,
+                                                                    TO_DATE (
+                                                                        prm_fecha_vc,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_tipo_rd,
+                                                                    prm_gerencia_legal);
+
+                                                        IF prm_tipo_grabado =
+                                                               'CONCLUIR'
+                                                        THEN
+                                                            SELECT   COUNT (
+                                                                         1)
+                                                              INTO   existe
+                                                              FROM   fis_conclusion a
+                                                             WHERE   a.ctl_control_id =
+                                                                         prm_id
+                                                                     AND a.con_num =
+                                                                            0
+                                                                     AND a.con_lstope =
+                                                                            'U';
+
+                                                            IF existe = 0
+                                                            THEN
+                                                                INSERT INTO fis_conclusion
+                                                                  VALUES   (prm_id,
+                                                                            'VISTA DE CARGO',
+                                                                            prm_numero_vc,
+                                                                            TO_DATE (
+                                                                                prm_fecha_vc,
+                                                                                'dd/mm/yyyy'),
+                                                                            0,
+                                                                            'U',
+                                                                            prm_usuario,
+                                                                            SYSDATE);
+                                                            END IF;
+                                                        END IF;
+
+                                                        COMMIT;
+                                                        RETURN 'CORRECTOe registr&oacute; correctamente la Vista de Cargo';
+                                                    ELSE
+                                                        SELECT   COUNT (1)
+                                                          INTO   existe
+                                                          FROM   fis_con_viscargo a
+                                                         WHERE   a.ctl_control_id =
+                                                                     prm_id;
+
+                                                        UPDATE   fis_con_viscargo
+                                                           SET   cvc_num =
+                                                                     existe
+                                                         WHERE   ctl_control_id =
+                                                                     prm_id
+                                                                 AND cvc_num =
+                                                                        0;
+
+                                                        INSERT INTO fis_con_viscargo (ctl_control_id,
+                                                                                      cvc_tipo_notificacion,
+                                                                                      cvc_fecha_notificacion,
+                                                                                      cvc_fecha_presentacion,
+                                                                                      cvc_inf_descargo,
+                                                                                      cvc_fecha_descargo,
+                                                                                      cvc_rd_final,
+                                                                                      cvc_fecha_not_rd_final,
+                                                                                      cvc_ci_remision,
+                                                                                      cvc_fecha_ci_remision,
+                                                                                      cvc_numero_rd,
+                                                                                      cvc_fecha_rd,
+                                                                                      cvc_num,
+                                                                                      cvc_lstope,
+                                                                                      cvc_usuario,
+                                                                                      cvc_fecsys,
+                                                                                      cvc_numero_informe,
+                                                                                      cvc_fecha_informe,
+                                                                                      cvc_numero_vc,
+                                                                                      cvc_fecha_vc,
+                                                                                      cvc_tipo_rd,
+                                                                                      cvc_gerencia_legal)
+                                                          VALUES   (prm_id,
+                                                                    prm_tipo_notificacion,
+                                                                    TO_DATE (
+                                                                        prm_fecha_notificacion,
+                                                                        'dd/mm/yyyy'),
+                                                                    TO_DATE (
+                                                                        prm_fecha_presentacion,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_inf_descargo,
+                                                                    TO_DATE (
+                                                                        prm_fecha_descargo,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_rd_final,
+                                                                    TO_DATE (
+                                                                        prm_fecha_not_rd_final,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_ci_remision,
+                                                                    TO_DATE (
+                                                                        prm_fecha_ci_remision,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_rd,
+                                                                    TO_DATE (
+                                                                        prm_fecha_rd,
+                                                                        'dd/mm/yyyy'),
+                                                                    0,
+                                                                    'U',
+                                                                    prm_usuario,
+                                                                    SYSDATE,
+                                                                    prm_numero_informe,
+                                                                    TO_DATE (
+                                                                        prm_fecha_informe,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_vc,
+                                                                    TO_DATE (
+                                                                        prm_fecha_vc,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_tipo_rd,
+                                                                    prm_gerencia_legal);
+
+                                                        IF prm_tipo_grabado =
+                                                               'CONCLUIR'
+                                                        THEN
+                                                            SELECT   COUNT (
+                                                                         1)
+                                                              INTO   existe
+                                                              FROM   fis_conclusion a
+                                                             WHERE   a.ctl_control_id =
+                                                                         prm_id
+                                                                     AND a.con_num =
+                                                                            0
+                                                                     AND a.con_lstope =
+                                                                            'U';
+
+                                                            IF existe = 0
+                                                            THEN
+                                                                INSERT INTO fis_conclusion
+                                                                  VALUES   (prm_id,
+                                                                            'VISTA DE CARGO',
+                                                                            prm_numero_vc,
+                                                                            TO_DATE (
+                                                                                prm_fecha_vc,
+                                                                                'dd/mm/yyyy'),
+                                                                            0,
+                                                                            'U',
+                                                                            prm_usuario,
+                                                                            SYSDATE);
+                                                            END IF;
+                                                        END IF;
+
+                                                        RETURN 'CORRECTOSe modific&oacute; correctamente la Vista de Cargo';
+                                                    END IF;
+                                                END IF;
+                                            END IF;
+                                        END IF;
+
+                                        IF estado = 'CONCLUIDO'
+                                        THEN
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_con_viscargo a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id
+                                                     AND a.cvc_num = 0
+                                                     AND a.cvc_lstope = 'U';
+
+                                            IF existe = 0
+                                            THEN
+                                                RETURN 'No tiene registr&oacute; de Vista de Cargo';
+                                            ELSE
+                                                SELECT   COUNT (1)
+                                                  INTO   existe
+                                                  FROM   fis_con_viscargo a
+                                                 WHERE   a.ctl_control_id =
+                                                             prm_id;
+
+                                                UPDATE   fis_con_viscargo
+                                                   SET   cvc_num = existe
+                                                 WHERE   ctl_control_id =
+                                                             prm_id
+                                                         AND cvc_num = 0;
+
+
+
+                                                INSERT INTO fis_con_viscargo (ctl_control_id,
+                                                                              cvc_tipo_notificacion,
+                                                                              cvc_fecha_notificacion,
+                                                                              cvc_fecha_presentacion,
+                                                                              cvc_inf_descargo,
+                                                                              cvc_fecha_descargo,
+                                                                              cvc_rd_final,
+                                                                              cvc_fecha_not_rd_final,
+                                                                              cvc_ci_remision,
+                                                                              cvc_fecha_ci_remision,
+                                                                              cvc_numero_rd,
+                                                                              cvc_fecha_rd,
+                                                                              cvc_num,
+                                                                              cvc_lstope,
+                                                                              cvc_usuario,
+                                                                              cvc_fecsys,
+                                                                              cvc_numero_informe,
+                                                                              cvc_fecha_informe,
+                                                                              cvc_numero_vc,
+                                                                              cvc_fecha_vc,
+                                                                              cvc_tipo_rd,
+                                                                              cvc_gerencia_legal)
+                                                    SELECT   prm_id,
+                                                             a.cvc_tipo_notificacion,
+                                                             a.cvc_fecha_notificacion,
+                                                             a.cvc_fecha_presentacion,
+                                                             a.cvc_inf_descargo,
+                                                             a.cvc_fecha_descargo,
+                                                             a.cvc_rd_final,
+                                                             a.cvc_fecha_not_rd_final,
+                                                             a.cvc_ci_remision,
+                                                             a.cvc_fecha_ci_remision,
+                                                             prm_numero_rd,
+                                                             TO_DATE (
+                                                                 prm_fecha_rd,
+                                                                 'dd/mm/yyyy'),
+                                                             0,
+                                                             'U',
+                                                             prm_usuario,
+                                                             SYSDATE,
+                                                             a.cvc_numero_informe,
+                                                             a.cvc_fecha_informe,
+                                                             a.cvc_numero_vc,
+                                                             a.cvc_fecha_vc,
+                                                             prm_tipo_rd,
+                                                             a.cvc_gerencia_legal
+                                                      FROM   fis_con_viscargo a
+                                                     WHERE   ctl_control_id =
+                                                                 prm_id
+                                                             AND cvc_num =
+                                                                    existe
+                                                             AND ROWNUM = 1;
+
+                                                RETURN 'CORRECTOSe registr&oacute; correctamente la Vista de Cargo';
+                                            END IF;
+                                        ELSE
+                                            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
+                                        END IF;
+                                    END IF;
+                                END IF;
                             END IF;
                         END IF;
-
-                        RETURN 'CORRECTOSe modific&oacute; correctamente la Vista de Cargo';
                     END IF;
                 END IF;
             END IF;
-        END IF;
-
-        IF estado = 'CONCLUIDO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_viscargo a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.cvc_num = 0
-                     AND a.cvc_lstope = 'U';
-
-            IF existe = 0
-            THEN
-                RETURN 'No tiene registr&oacute; de Vista de Cargo';
-            ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_viscargo a
-                 WHERE   a.ctl_control_id = prm_id;
-
-                UPDATE   fis_con_viscargo
-                   SET   cvc_num = existe
-                 WHERE   ctl_control_id = prm_id AND cvc_num = 0;
-
-
-
-                INSERT INTO fis_con_viscargo (ctl_control_id,
-                                              cvc_tipo_notificacion,
-                                              cvc_fecha_notificacion,
-                                              cvc_fecha_presentacion,
-                                              cvc_inf_descargo,
-                                              cvc_fecha_descargo,
-                                              cvc_rd_final,
-                                              cvc_fecha_not_rd_final,
-                                              cvc_ci_remision,
-                                              cvc_fecha_ci_remision,
-                                              cvc_numero_rd,
-                                              cvc_fecha_rd,
-                                              cvc_num,
-                                              cvc_lstope,
-                                              cvc_usuario,
-                                              cvc_fecsys,
-                                              cvc_numero_informe,
-                                              cvc_fecha_informe,
-                                              cvc_numero_vc,
-                                              cvc_fecha_vc,
-                                              cvc_tipo_rd,
-                                              cvc_gerencia_legal)
-                    SELECT   prm_id,
-                             a.cvc_tipo_notificacion,
-                             a.cvc_fecha_notificacion,
-                             a.cvc_fecha_presentacion,
-                             a.cvc_inf_descargo,
-                             a.cvc_fecha_descargo,
-                             a.cvc_rd_final,
-                             a.cvc_fecha_not_rd_final,
-                             a.cvc_ci_remision,
-                             a.cvc_fecha_ci_remision,
-                             prm_numero_rd,
-                             TO_DATE (prm_fecha_rd, 'dd/mm/yyyy'),
-                             0,
-                             'U',
-                             prm_usuario,
-                             SYSDATE,
-                             a.cvc_numero_informe,
-                             a.cvc_fecha_informe,
-                             a.cvc_numero_vc,
-                             a.cvc_fecha_vc,
-                             prm_tipo_rd,
-                             a.cvc_gerencia_legal
-                      FROM   fis_con_viscargo a
-                     WHERE       ctl_control_id = prm_id
-                             AND cvc_num = existe
-                             AND ROWNUM = 1;
-
-                RETURN 'CORRECTOSe registr&oacute; correctamente la Vista de Cargo';
-            END IF;
-        ELSE
-            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -1234,195 +1493,214 @@ IS
         doc_con_num   VARCHAR2 (30) := '';
         doc_con_fec   VARCHAR2 (30) := '';
     BEGIN
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_conclusion a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.con_num = 0
-                 AND a.con_lstope = 'U';
-
-        IF existe = 1
+        IF NOT prm_fecha_informe IS NULL
+           AND TO_DATE (prm_fecha_informe, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
-            SELECT   a.con_tipo_doc_con
-              INTO   doc_con
-              FROM   fis_conclusion a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.con_num = 0
-                     AND a.con_lstope = 'U';
-
-            IF doc_con =
-                   'RESOLUCION DETERMINATIVA FINAL Y SIN VISTA DE CARGO'
+            RETURN 'La fecha de informe t&eacute;cnico no puede ser mayor a la actual';
+        ELSE
+            IF NOT prm_fecha_not_rd_final IS NULL
+               AND TO_DATE (prm_fecha_not_rd_final, 'dd/mm/yyyy') >
+                      TRUNC (SYSDATE)
             THEN
-                SELECT   a.crd_rd_final,
-                         TO_CHAR (a.crd_fecha_not_rd_final, 'dd/mm/yyyy')
-                  INTO   doc_con_num, doc_con_fec
-                  FROM   fis_con_resdeter a
-                 WHERE       a.crd_num = 0
-                         AND a.crd_lstope = 'U'
-                         AND a.ctl_control_id = prm_id;
-
-                IF NOT (prm_rd_final = doc_con_num
-                        AND prm_fecha_not_rd_final = doc_con_fec)
-                THEN
-                    RETURN 'No se puede modificar el numero o la fecha de la Resoluci&Oacute;N Determinativa, porque ya fue registrada como documento de conclusi&oacute;n.';
-                END IF;
-            END IF;
-        END IF;
-
-        SELECT   est_estado
-          INTO   estado
-          FROM   fis_estado a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.est_num = 0
-                 AND a.est_lstope = 'U';
-
-        IF estado = 'REGISTRADO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_resdeter a
-             WHERE       NOT a.ctl_control_id = prm_id
-                     AND a.crd_numero_informe = prm_numero_informe
-                     AND NOT prm_numero_informe IS NULL
-                     AND a.crd_num = 0
-                     AND a.crd_lstope = 'U';
-
-            IF existe > 0
-            THEN
-                RETURN    'El n&uacute;mero de informe '
-                       || prm_numero_informe
-                       || ' se encuentra duplicado en otra orden';
+                RETURN 'La fecha de notificaci&oacute;n de la RD final no puede ser mayor a la actual';
             ELSE
                 SELECT   COUNT (1)
                   INTO   existe
-                  FROM   fis_con_resdeter a
-                 WHERE       NOT a.ctl_control_id = prm_id
-                         AND a.crd_rd_final = prm_rd_final
-                         AND NOT prm_rd_final IS NULL
-                         AND a.crd_num = 0
-                         AND a.crd_lstope = 'U';
+                  FROM   fis_conclusion a
+                 WHERE       a.ctl_control_id = prm_id
+                         AND a.con_num = 0
+                         AND a.con_lstope = 'U';
 
-                IF existe > 0
+                IF existe = 1
                 THEN
-                    RETURN 'El n&uacute;mero de Resoluci&oacute;n Determinativa Final '
-                           || prm_rd_final
-                           || ' se encuentra duplicado en otra orden';
-                ELSE
+                    SELECT   a.con_tipo_doc_con
+                      INTO   doc_con
+                      FROM   fis_conclusion a
+                     WHERE       a.ctl_control_id = prm_id
+                             AND a.con_num = 0
+                             AND a.con_lstope = 'U';
+
+                    IF doc_con =
+                           'RESOLUCION DETERMINATIVA FINAL Y SIN VISTA DE CARGO'
+                    THEN
+                        SELECT   a.crd_rd_final,
+                                 TO_CHAR (a.crd_fecha_not_rd_final,
+                                          'dd/mm/yyyy')
+                          INTO   doc_con_num, doc_con_fec
+                          FROM   fis_con_resdeter a
+                         WHERE       a.crd_num = 0
+                                 AND a.crd_lstope = 'U'
+                                 AND a.ctl_control_id = prm_id;
+
+                        IF NOT (prm_rd_final = doc_con_num
+                                AND prm_fecha_not_rd_final = doc_con_fec)
+                        THEN
+                            RETURN 'No se puede modificar el numero o la fecha de la Resoluci&Oacute;N Determinativa, porque ya fue registrada como documento de conclusi&oacute;n.';
+                        END IF;
+                    END IF;
+                END IF;
+
+                SELECT   est_estado
+                  INTO   estado
+                  FROM   fis_estado a
+                 WHERE       a.ctl_control_id = prm_id
+                         AND a.est_num = 0
+                         AND a.est_lstope = 'U';
+
+                IF estado = 'REGISTRADO'
+                THEN
                     SELECT   COUNT (1)
                       INTO   existe
                       FROM   fis_con_resdeter a
-                     WHERE       a.ctl_control_id = prm_id
+                     WHERE       NOT a.ctl_control_id = prm_id
+                             AND a.crd_numero_informe = prm_numero_informe
+                             AND NOT prm_numero_informe IS NULL
                              AND a.crd_num = 0
                              AND a.crd_lstope = 'U';
 
-                    IF existe = 0
+                    IF existe > 0
                     THEN
-                        INSERT INTO fis_con_resdeter (ctl_control_id,
-                                                      crd_rd_final,
-                                                      crd_fecha_not_rd_final,
-                                                      crd_num,
-                                                      crd_lstope,
-                                                      crd_usuario,
-                                                      crd_fecsys,
-                                                      crd_numero_informe,
-                                                      crd_fecha_informe)
-                          VALUES   (prm_id,
-                                    prm_rd_final,
-                                    TO_DATE (prm_fecha_not_rd_final,
-                                             'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'));
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
-                        THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
-                            THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'RESOLUCION DETERMINATIVA FINAL Y SIN VISTA DE CARGO',
-                                            prm_rd_final,
-                                            TO_DATE (prm_fecha_not_rd_final,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
-                            END IF;
-                        END IF;
-
-                        COMMIT;
-                        RETURN 'CORRECTOSe registr&oacute; correctamente la Resoluci&Oacute;N Determinativa Final y Sin Vista de Cargo';
+                        RETURN    'El n&uacute;mero de informe '
+                               || prm_numero_informe
+                               || ' se encuentra duplicado en otra orden';
                     ELSE
                         SELECT   COUNT (1)
                           INTO   existe
                           FROM   fis_con_resdeter a
-                         WHERE   a.ctl_control_id = prm_id;
+                         WHERE       NOT a.ctl_control_id = prm_id
+                                 AND a.crd_rd_final = prm_rd_final
+                                 AND NOT prm_rd_final IS NULL
+                                 AND a.crd_num = 0
+                                 AND a.crd_lstope = 'U';
 
-                        UPDATE   fis_con_resdeter
-                           SET   crd_num = existe
-                         WHERE   ctl_control_id = prm_id AND crd_num = 0;
-
-                        INSERT INTO fis_con_resdeter (ctl_control_id,
-                                                      crd_rd_final,
-                                                      crd_fecha_not_rd_final,
-                                                      crd_num,
-                                                      crd_lstope,
-                                                      crd_usuario,
-                                                      crd_fecsys,
-                                                      crd_numero_informe,
-                                                      crd_fecha_informe)
-                          VALUES   (prm_id,
-                                    prm_rd_final,
-                                    TO_DATE (prm_fecha_not_rd_final,
-                                             'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'));
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
+                        IF existe > 0
                         THEN
+                            RETURN 'El n&uacute;mero de Resoluci&oacute;n Determinativa Final '
+                                   || prm_rd_final
+                                   || ' se encuentra duplicado en otra orden';
+                        ELSE
                             SELECT   COUNT (1)
                               INTO   existe
-                              FROM   fis_conclusion a
+                              FROM   fis_con_resdeter a
                              WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
+                                     AND a.crd_num = 0
+                                     AND a.crd_lstope = 'U';
 
                             IF existe = 0
                             THEN
-                                INSERT INTO fis_conclusion
+                                INSERT INTO fis_con_resdeter (ctl_control_id,
+                                                              crd_rd_final,
+                                                              crd_fecha_not_rd_final,
+                                                              crd_num,
+                                                              crd_lstope,
+                                                              crd_usuario,
+                                                              crd_fecsys,
+                                                              crd_numero_informe,
+                                                              crd_fecha_informe)
                                   VALUES   (prm_id,
-                                            'RESOLUCION DETERMINATIVA FINAL Y SIN VISTA DE CARGO',
                                             prm_rd_final,
                                             TO_DATE (prm_fecha_not_rd_final,
                                                      'dd/mm/yyyy'),
                                             0,
                                             'U',
                                             prm_usuario,
-                                            SYSDATE);
+                                            SYSDATE,
+                                            prm_numero_informe,
+                                            TO_DATE (prm_fecha_informe,
+                                                     'dd/mm/yyyy'));
+
+                                IF prm_tipo_grabado = 'CONCLUIR'
+                                THEN
+                                    SELECT   COUNT (1)
+                                      INTO   existe
+                                      FROM   fis_conclusion a
+                                     WHERE       a.ctl_control_id = prm_id
+                                             AND a.con_num = 0
+                                             AND a.con_lstope = 'U';
+
+                                    IF existe = 0
+                                    THEN
+                                        INSERT INTO fis_conclusion
+                                          VALUES   (prm_id,
+                                                    'RESOLUCION DETERMINATIVA FINAL Y SIN VISTA DE CARGO',
+                                                    prm_rd_final,
+                                                    TO_DATE (
+                                                        prm_fecha_not_rd_final,
+                                                        'dd/mm/yyyy'),
+                                                    0,
+                                                    'U',
+                                                    prm_usuario,
+                                                    SYSDATE);
+                                    END IF;
+                                END IF;
+
+                                COMMIT;
+                                RETURN 'CORRECTOSe registr&oacute; correctamente la Resoluci&Oacute;N Determinativa Final y Sin Vista de Cargo';
+                            ELSE
+                                SELECT   COUNT (1)
+                                  INTO   existe
+                                  FROM   fis_con_resdeter a
+                                 WHERE   a.ctl_control_id = prm_id;
+
+                                UPDATE   fis_con_resdeter
+                                   SET   crd_num = existe
+                                 WHERE   ctl_control_id = prm_id
+                                         AND crd_num = 0;
+
+                                INSERT INTO fis_con_resdeter (ctl_control_id,
+                                                              crd_rd_final,
+                                                              crd_fecha_not_rd_final,
+                                                              crd_num,
+                                                              crd_lstope,
+                                                              crd_usuario,
+                                                              crd_fecsys,
+                                                              crd_numero_informe,
+                                                              crd_fecha_informe)
+                                  VALUES   (prm_id,
+                                            prm_rd_final,
+                                            TO_DATE (prm_fecha_not_rd_final,
+                                                     'dd/mm/yyyy'),
+                                            0,
+                                            'U',
+                                            prm_usuario,
+                                            SYSDATE,
+                                            prm_numero_informe,
+                                            TO_DATE (prm_fecha_informe,
+                                                     'dd/mm/yyyy'));
+
+                                IF prm_tipo_grabado = 'CONCLUIR'
+                                THEN
+                                    SELECT   COUNT (1)
+                                      INTO   existe
+                                      FROM   fis_conclusion a
+                                     WHERE       a.ctl_control_id = prm_id
+                                             AND a.con_num = 0
+                                             AND a.con_lstope = 'U';
+
+                                    IF existe = 0
+                                    THEN
+                                        INSERT INTO fis_conclusion
+                                          VALUES   (prm_id,
+                                                    'RESOLUCION DETERMINATIVA FINAL Y SIN VISTA DE CARGO',
+                                                    prm_rd_final,
+                                                    TO_DATE (
+                                                        prm_fecha_not_rd_final,
+                                                        'dd/mm/yyyy'),
+                                                    0,
+                                                    'U',
+                                                    prm_usuario,
+                                                    SYSDATE);
+                                    END IF;
+                                END IF;
+
+                                RETURN 'CORRECTOSe modific&oacute; correctamente la resoluci&oacute;n determinativa final y sin vista de cargo';
                             END IF;
                         END IF;
-
-                        RETURN 'CORRECTOSe modific&oacute; correctamente la resoluci&oacute;n determinativa final y sin vista de cargo';
                     END IF;
+                ELSE
+                    RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
                 END IF;
             END IF;
-        ELSE
-            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS
@@ -1505,340 +1783,470 @@ IS
         doc_con_num   VARCHAR2 (30) := '';
         doc_con_fec   VARCHAR2 (30) := '';
     BEGIN
-        SELECT   COUNT (1)
-          INTO   existe
-          FROM   fis_conclusion a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.con_num = 0
-                 AND a.con_lstope = 'U';
-
-        IF existe = 1
+        IF NOT prm_fecha_acta_interv IS NULL
+           AND TO_DATE (prm_fecha_acta_interv, 'dd/mm/yyyy') >
+                  TRUNC (SYSDATE)
         THEN
-            SELECT   a.con_tipo_doc_con
-              INTO   doc_con
-              FROM   fis_conclusion a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.con_num = 0
-                     AND a.con_lstope = 'U';
-
-            IF doc_con = 'ACTA DE INTERVENCION'
+            RETURN 'La fecha del acta de intervenci&oacute;n no puede ser mayor a la actual';
+        ELSE
+            IF NOT prm_fecha_ci_remision IS NULL
+               AND TO_DATE (prm_fecha_ci_remision, 'dd/mm/yyyy') >
+                      TRUNC (SYSDATE)
             THEN
-                SELECT   a.cai_acta_interv,
-                         TO_CHAR (a.cai_fecha_acta_interv, 'dd/mm/yyyy')
-                  INTO   doc_con_num, doc_con_fec
-                  FROM   fis_con_actainter a
-                 WHERE       a.cai_num = 0
-                         AND a.cai_lstope = 'U'
-                         AND a.ctl_control_id = prm_id;
-
-                IF NOT (prm_acta_interv = doc_con_num
-                        AND prm_fecha_acta_interv = doc_con_fec)
-                THEN
-                    RETURN 'No se puede modificar el numero o la fecha del Acta de Intervenci&oacute;n, porque ya fue registrada como documento de conclusi&oacute;n.';
-                END IF;
-            END IF;
-        END IF;
-
-
-        SELECT   est_estado
-          INTO   estado
-          FROM   fis_estado a
-         WHERE       a.ctl_control_id = prm_id
-                 AND a.est_num = 0
-                 AND a.est_lstope = 'U';
-
-        IF estado = 'REGISTRADO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_actainter a
-             WHERE       NOT a.ctl_control_id = prm_id
-                     AND a.cai_numero_informe = prm_numero_informe
-                     AND NOT prm_numero_informe IS NULL
-                     AND a.cai_num = 0
-                     AND a.cai_lstope = 'U';
-
-            IF existe > 0
-            THEN
-                RETURN    'El n&uacute;mero de informe '
-                       || prm_numero_informe
-                       || ' se encuentra duplicado en otra orden';
+                RETURN 'La fecha de la CI no puede ser mayor a la actual';
             ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_actainter a
-                 WHERE       NOT a.ctl_control_id = prm_id
-                         AND a.cai_acta_interv = prm_acta_interv
-                         AND NOT prm_acta_interv IS NULL
-                         AND a.cai_num = 0
-                         AND a.cai_lstope = 'U';
-
-                IF existe > 0
+                IF NOT prm_fecha_pres_descargos IS NULL
+                   AND TO_DATE (prm_fecha_pres_descargos, 'dd/mm/yyyy') >
+                          TRUNC (SYSDATE)
                 THEN
-                    RETURN 'El n&uacute;mero de Acta de Intervenci&oacute;n '
-                           || prm_acta_interv
-                           || ' se encuentra duplicado en otra orden';
+                    RETURN 'La fecha de presentaci&oacute;n de descargos no puede ser mayor a la actual';
                 ELSE
-                    SELECT   COUNT (1)
-                      INTO   existe
-                      FROM   fis_con_actainter a
-                     WHERE       a.ctl_control_id = prm_id
-                             AND a.cai_num = 0
-                             AND a.cai_lstope = 'U';
-
-                    IF existe = 0
+                    IF NOT prm_fecha_inf_descargo IS NULL
+                       AND TO_DATE (prm_fecha_inf_descargo, 'dd/mm/yyyy') >
+                              TRUNC (SYSDATE)
                     THEN
-                        INSERT INTO fis_con_actainter (ctl_control_id,
-                                                       cai_acta_interv,
-                                                       cai_fecha_acta_interv,
-                                                       cai_tipo_ilicito,
-                                                       cai_ci_remision,
-                                                       cai_fecha_ci_remision,
-                                                       cai_fecha_pres_descargos,
-                                                       cai_inf_descargo,
-                                                       cai_fecha_inf_descargo,
-                                                       cai_numero_rfs,
-                                                       cai_fecha_rfs,
-                                                       cai_numero_rs,
-                                                       cai_fecha_rs,
-                                                       cai_num,
-                                                       cai_lstope,
-                                                       cai_usuario,
-                                                       cai_fecsys,
-                                                       cai_numero_informe,
-                                                       cai_fecha_informe,
-                                                       cai_gerencia_legal,
-                                                       cai_fecha_not_ai,
-                                                       cai_tipo_not_ai,
-                                                       cai_resultado_des,
-                                                       cai_tipo_resolucion)
-                          VALUES   (prm_id,
-                                    prm_acta_interv,
-                                    TO_DATE (prm_fecha_acta_interv,
-                                             'dd/mm/yyyy'),
-                                    prm_tipo_ilicito,
-                                    prm_ci_remision,
-                                    TO_DATE (prm_fecha_ci_remision,
-                                             'dd/mm/yyyy'),
-                                    TO_DATE (prm_fecha_pres_descargos,
-                                             'dd/mm/yyyy'),
-                                    prm_inf_descargo,
-                                    TO_DATE (prm_fecha_inf_descargo,
-                                             'dd/mm/yyyy'),
-                                    prm_numero_rfs,
-                                    TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy'),
-                                    prm_numero_rs,
-                                    TO_DATE (prm_fecha_rs, 'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_gerencia_legal,
-                                    TO_DATE (prm_fecha_not_ai, 'dd/mm/yyyy'),
-                                    prm_tipo_not_ai,
-                                    prm_resultado_des,
-                                    prm_tipo_resolucion);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
-                        THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
-                            THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'ACTA DE INTERVENCION',
-                                            prm_acta_interv,
-                                            TO_DATE (prm_fecha_acta_interv,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
-                            END IF;
-                        END IF;
-
-                        COMMIT;
-                        RETURN 'CORRECTOSe registr&oacute; correctamente la Acta de Intervenci&oacute;n';
+                        RETURN 'La fecha informe de descargos no puede ser mayor a la actual';
                     ELSE
-                        SELECT   COUNT (1)
-                          INTO   existe
-                          FROM   fis_con_actainter a
-                         WHERE   a.ctl_control_id = prm_id;
-
-                        UPDATE   fis_con_actainter
-                           SET   cai_num = existe
-                         WHERE   ctl_control_id = prm_id AND cai_num = 0;
-
-                        INSERT INTO fis_con_actainter (ctl_control_id,
-                                                       cai_acta_interv,
-                                                       cai_fecha_acta_interv,
-                                                       cai_tipo_ilicito,
-                                                       cai_ci_remision,
-                                                       cai_fecha_ci_remision,
-                                                       cai_fecha_pres_descargos,
-                                                       cai_inf_descargo,
-                                                       cai_fecha_inf_descargo,
-                                                       cai_numero_rfs,
-                                                       cai_fecha_rfs,
-                                                       cai_numero_rs,
-                                                       cai_fecha_rs,
-                                                       cai_num,
-                                                       cai_lstope,
-                                                       cai_usuario,
-                                                       cai_fecsys,
-                                                       cai_numero_informe,
-                                                       cai_fecha_informe,
-                                                       cai_gerencia_legal,
-                                                       cai_fecha_not_ai,
-                                                       cai_tipo_not_ai,
-                                                       cai_resultado_des,
-                                                       cai_tipo_resolucion)
-                          VALUES   (prm_id,
-                                    prm_acta_interv,
-                                    TO_DATE (prm_fecha_acta_interv,
-                                             'dd/mm/yyyy'),
-                                    prm_tipo_ilicito,
-                                    prm_ci_remision,
-                                    TO_DATE (prm_fecha_ci_remision,
-                                             'dd/mm/yyyy'),
-                                    TO_DATE (prm_fecha_pres_descargos,
-                                             'dd/mm/yyyy'),
-                                    prm_inf_descargo,
-                                    TO_DATE (prm_fecha_inf_descargo,
-                                             'dd/mm/yyyy'),
-                                    prm_numero_rfs,
-                                    TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy'),
-                                    prm_numero_rs,
-                                    TO_DATE (prm_fecha_rs, 'dd/mm/yyyy'),
-                                    0,
-                                    'U',
-                                    prm_usuario,
-                                    SYSDATE,
-                                    prm_numero_informe,
-                                    TO_DATE (prm_fecha_informe, 'dd/mm/yyyy'),
-                                    prm_gerencia_legal,
-                                    TO_DATE (prm_fecha_not_ai, 'dd/mm/yyyy'),
-                                    prm_tipo_not_ai,
-                                    prm_resultado_des,
-                                    prm_tipo_resolucion);
-
-                        IF prm_tipo_grabado = 'CONCLUIR'
+                        IF NOT prm_fecha_rfs IS NULL
+                           AND TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy') >
+                                  TRUNC (SYSDATE)
                         THEN
-                            SELECT   COUNT (1)
-                              INTO   existe
-                              FROM   fis_conclusion a
-                             WHERE       a.ctl_control_id = prm_id
-                                     AND a.con_num = 0
-                                     AND a.con_lstope = 'U';
-
-                            IF existe = 0
+                            RETURN 'La fecha de rfs no puede ser mayor a la actual';
+                        ELSE
+                            IF NOT prm_fecha_rs IS NULL
+                               AND TO_DATE (prm_fecha_rs, 'dd/mm/yyyy') >
+                                      TRUNC (SYSDATE)
                             THEN
-                                INSERT INTO fis_conclusion
-                                  VALUES   (prm_id,
-                                            'ACTA DE INTERVENCION',
-                                            prm_acta_interv,
-                                            TO_DATE (prm_fecha_acta_interv,
-                                                     'dd/mm/yyyy'),
-                                            0,
-                                            'U',
-                                            prm_usuario,
-                                            SYSDATE);
+                                RETURN 'La fecha de notificaci&oacute;n de la resoluci&oacute;n no puede ser mayor a la actual';
+                            ELSE
+                                IF NOT prm_fecha_informe IS NULL
+                                   AND TO_DATE (prm_fecha_informe,
+                                                'dd/mm/yyyy') >
+                                          TRUNC (SYSDATE)
+                                THEN
+                                    RETURN 'La fecha de informe t&eacute;cnico no puede ser mayor a la actual';
+                                ELSE
+                                    IF NOT prm_fecha_not_ai IS NULL
+                                       AND TO_DATE (prm_fecha_not_ai,
+                                                    'dd/mm/yyyy') >
+                                              TRUNC (SYSDATE)
+                                    THEN
+                                        RETURN 'La fecha de notificaci&oacute;n de acta de intervenci&oacute;n no puede ser mayor a la actual';
+                                    ELSE
+                                        SELECT   COUNT (1)
+                                          INTO   existe
+                                          FROM   fis_conclusion a
+                                         WHERE   a.ctl_control_id = prm_id
+                                                 AND a.con_num = 0
+                                                 AND a.con_lstope = 'U';
+
+                                        IF existe = 1
+                                        THEN
+                                            SELECT   a.con_tipo_doc_con
+                                              INTO   doc_con
+                                              FROM   fis_conclusion a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id
+                                                     AND a.con_num = 0
+                                                     AND a.con_lstope = 'U';
+
+                                            IF doc_con =
+                                                   'ACTA DE INTERVENCION'
+                                            THEN
+                                                SELECT   a.cai_acta_interv,
+                                                         TO_CHAR (
+                                                             a.cai_fecha_acta_interv,
+                                                             'dd/mm/yyyy')
+                                                  INTO   doc_con_num,
+                                                         doc_con_fec
+                                                  FROM   fis_con_actainter a
+                                                 WHERE   a.cai_num = 0
+                                                         AND a.cai_lstope =
+                                                                'U'
+                                                         AND a.ctl_control_id =
+                                                                prm_id;
+
+                                                IF NOT (prm_acta_interv =
+                                                            doc_con_num
+                                                        AND prm_fecha_acta_interv =
+                                                               doc_con_fec)
+                                                THEN
+                                                    RETURN 'No se puede modificar el numero o la fecha del Acta de Intervenci&oacute;n, porque ya fue registrada como documento de conclusi&oacute;n.';
+                                                END IF;
+                                            END IF;
+                                        END IF;
+
+
+                                        SELECT   est_estado
+                                          INTO   estado
+                                          FROM   fis_estado a
+                                         WHERE   a.ctl_control_id = prm_id
+                                                 AND a.est_num = 0
+                                                 AND a.est_lstope = 'U';
+
+                                        IF estado = 'REGISTRADO'
+                                        THEN
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_con_actainter a
+                                             WHERE   NOT a.ctl_control_id =
+                                                             prm_id
+                                                     AND a.cai_numero_informe =
+                                                            prm_numero_informe
+                                                     AND NOT prm_numero_informe IS NULL
+                                                     AND a.cai_num = 0
+                                                     AND a.cai_lstope = 'U';
+
+                                            IF existe > 0
+                                            THEN
+                                                RETURN 'El n&uacute;mero de informe '
+                                                       || prm_numero_informe
+                                                       || ' se encuentra duplicado en otra orden';
+                                            ELSE
+                                                SELECT   COUNT (1)
+                                                  INTO   existe
+                                                  FROM   fis_con_actainter a
+                                                 WHERE   NOT a.ctl_control_id =
+                                                                 prm_id
+                                                         AND a.cai_acta_interv =
+                                                                prm_acta_interv
+                                                         AND NOT prm_acta_interv IS NULL
+                                                         AND a.cai_num = 0
+                                                         AND a.cai_lstope =
+                                                                'U';
+
+                                                IF existe > 0
+                                                THEN
+                                                    RETURN 'El n&uacute;mero de Acta de Intervenci&oacute;n '
+                                                           || prm_acta_interv
+                                                           || ' se encuentra duplicado en otra orden';
+                                                ELSE
+                                                    SELECT   COUNT (1)
+                                                      INTO   existe
+                                                      FROM   fis_con_actainter a
+                                                     WHERE   a.ctl_control_id =
+                                                                 prm_id
+                                                             AND a.cai_num =
+                                                                    0
+                                                             AND a.cai_lstope =
+                                                                    'U';
+
+                                                    IF existe = 0
+                                                    THEN
+                                                        INSERT INTO fis_con_actainter (ctl_control_id,
+                                                                                       cai_acta_interv,
+                                                                                       cai_fecha_acta_interv,
+                                                                                       cai_tipo_ilicito,
+                                                                                       cai_ci_remision,
+                                                                                       cai_fecha_ci_remision,
+                                                                                       cai_fecha_pres_descargos,
+                                                                                       cai_inf_descargo,
+                                                                                       cai_fecha_inf_descargo,
+                                                                                       cai_numero_rfs,
+                                                                                       cai_fecha_rfs,
+                                                                                       cai_numero_rs,
+                                                                                       cai_fecha_rs,
+                                                                                       cai_num,
+                                                                                       cai_lstope,
+                                                                                       cai_usuario,
+                                                                                       cai_fecsys,
+                                                                                       cai_numero_informe,
+                                                                                       cai_fecha_informe,
+                                                                                       cai_gerencia_legal,
+                                                                                       cai_fecha_not_ai,
+                                                                                       cai_tipo_not_ai,
+                                                                                       cai_resultado_des,
+                                                                                       cai_tipo_resolucion)
+                                                          VALUES   (prm_id,
+                                                                    prm_acta_interv,
+                                                                    TO_DATE (
+                                                                        prm_fecha_acta_interv,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_tipo_ilicito,
+                                                                    prm_ci_remision,
+                                                                    TO_DATE (
+                                                                        prm_fecha_ci_remision,
+                                                                        'dd/mm/yyyy'),
+                                                                    TO_DATE (
+                                                                        prm_fecha_pres_descargos,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_inf_descargo,
+                                                                    TO_DATE (
+                                                                        prm_fecha_inf_descargo,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_rfs,
+                                                                    TO_DATE (
+                                                                        prm_fecha_rfs,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_rs,
+                                                                    TO_DATE (
+                                                                        prm_fecha_rs,
+                                                                        'dd/mm/yyyy'),
+                                                                    0,
+                                                                    'U',
+                                                                    prm_usuario,
+                                                                    SYSDATE,
+                                                                    prm_numero_informe,
+                                                                    TO_DATE (
+                                                                        prm_fecha_informe,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_gerencia_legal,
+                                                                    TO_DATE (
+                                                                        prm_fecha_not_ai,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_tipo_not_ai,
+                                                                    prm_resultado_des,
+                                                                    prm_tipo_resolucion);
+
+                                                        IF prm_tipo_grabado =
+                                                               'CONCLUIR'
+                                                        THEN
+                                                            SELECT   COUNT (
+                                                                         1)
+                                                              INTO   existe
+                                                              FROM   fis_conclusion a
+                                                             WHERE   a.ctl_control_id =
+                                                                         prm_id
+                                                                     AND a.con_num =
+                                                                            0
+                                                                     AND a.con_lstope =
+                                                                            'U';
+
+                                                            IF existe = 0
+                                                            THEN
+                                                                INSERT INTO fis_conclusion
+                                                                  VALUES   (prm_id,
+                                                                            'ACTA DE INTERVENCION',
+                                                                            prm_acta_interv,
+                                                                            TO_DATE (
+                                                                                prm_fecha_acta_interv,
+                                                                                'dd/mm/yyyy'),
+                                                                            0,
+                                                                            'U',
+                                                                            prm_usuario,
+                                                                            SYSDATE);
+                                                            END IF;
+                                                        END IF;
+
+                                                        COMMIT;
+                                                        RETURN 'CORRECTOSe registr&oacute; correctamente la Acta de Intervenci&oacute;n';
+                                                    ELSE
+                                                        SELECT   COUNT (1)
+                                                          INTO   existe
+                                                          FROM   fis_con_actainter a
+                                                         WHERE   a.ctl_control_id =
+                                                                     prm_id;
+
+                                                        UPDATE   fis_con_actainter
+                                                           SET   cai_num =
+                                                                     existe
+                                                         WHERE   ctl_control_id =
+                                                                     prm_id
+                                                                 AND cai_num =
+                                                                        0;
+
+                                                        INSERT INTO fis_con_actainter (ctl_control_id,
+                                                                                       cai_acta_interv,
+                                                                                       cai_fecha_acta_interv,
+                                                                                       cai_tipo_ilicito,
+                                                                                       cai_ci_remision,
+                                                                                       cai_fecha_ci_remision,
+                                                                                       cai_fecha_pres_descargos,
+                                                                                       cai_inf_descargo,
+                                                                                       cai_fecha_inf_descargo,
+                                                                                       cai_numero_rfs,
+                                                                                       cai_fecha_rfs,
+                                                                                       cai_numero_rs,
+                                                                                       cai_fecha_rs,
+                                                                                       cai_num,
+                                                                                       cai_lstope,
+                                                                                       cai_usuario,
+                                                                                       cai_fecsys,
+                                                                                       cai_numero_informe,
+                                                                                       cai_fecha_informe,
+                                                                                       cai_gerencia_legal,
+                                                                                       cai_fecha_not_ai,
+                                                                                       cai_tipo_not_ai,
+                                                                                       cai_resultado_des,
+                                                                                       cai_tipo_resolucion)
+                                                          VALUES   (prm_id,
+                                                                    prm_acta_interv,
+                                                                    TO_DATE (
+                                                                        prm_fecha_acta_interv,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_tipo_ilicito,
+                                                                    prm_ci_remision,
+                                                                    TO_DATE (
+                                                                        prm_fecha_ci_remision,
+                                                                        'dd/mm/yyyy'),
+                                                                    TO_DATE (
+                                                                        prm_fecha_pres_descargos,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_inf_descargo,
+                                                                    TO_DATE (
+                                                                        prm_fecha_inf_descargo,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_rfs,
+                                                                    TO_DATE (
+                                                                        prm_fecha_rfs,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_numero_rs,
+                                                                    TO_DATE (
+                                                                        prm_fecha_rs,
+                                                                        'dd/mm/yyyy'),
+                                                                    0,
+                                                                    'U',
+                                                                    prm_usuario,
+                                                                    SYSDATE,
+                                                                    prm_numero_informe,
+                                                                    TO_DATE (
+                                                                        prm_fecha_informe,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_gerencia_legal,
+                                                                    TO_DATE (
+                                                                        prm_fecha_not_ai,
+                                                                        'dd/mm/yyyy'),
+                                                                    prm_tipo_not_ai,
+                                                                    prm_resultado_des,
+                                                                    prm_tipo_resolucion);
+
+                                                        IF prm_tipo_grabado =
+                                                               'CONCLUIR'
+                                                        THEN
+                                                            SELECT   COUNT (
+                                                                         1)
+                                                              INTO   existe
+                                                              FROM   fis_conclusion a
+                                                             WHERE   a.ctl_control_id =
+                                                                         prm_id
+                                                                     AND a.con_num =
+                                                                            0
+                                                                     AND a.con_lstope =
+                                                                            'U';
+
+                                                            IF existe = 0
+                                                            THEN
+                                                                INSERT INTO fis_conclusion
+                                                                  VALUES   (prm_id,
+                                                                            'ACTA DE INTERVENCION',
+                                                                            prm_acta_interv,
+                                                                            TO_DATE (
+                                                                                prm_fecha_acta_interv,
+                                                                                'dd/mm/yyyy'),
+                                                                            0,
+                                                                            'U',
+                                                                            prm_usuario,
+                                                                            SYSDATE);
+                                                            END IF;
+                                                        END IF;
+
+                                                        RETURN 'CORRECTOSe modific&oacute; correctamente la Acta de Intervenci&oacute;n';
+                                                    END IF;
+                                                END IF;
+                                            END IF;
+                                        END IF;
+
+                                        IF estado = 'CONCLUIDO'
+                                        THEN
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_con_actainter a
+                                             WHERE   a.ctl_control_id =
+                                                         prm_id
+                                                     AND a.cai_num = 0
+                                                     AND a.cai_lstope = 'U';
+
+                                            IF existe = 0
+                                            THEN
+                                                RETURN 'No tiene registr&oacute; de Acta de Intervenci&oacute;n';
+                                            ELSE
+                                                SELECT   COUNT (1)
+                                                  INTO   existe
+                                                  FROM   fis_con_actainter a
+                                                 WHERE   a.ctl_control_id =
+                                                             prm_id;
+
+                                                UPDATE   fis_con_actainter
+                                                   SET   cai_num = existe
+                                                 WHERE   ctl_control_id =
+                                                             prm_id
+                                                         AND cai_num = 0;
+
+                                                INSERT INTO fis_con_actainter (ctl_control_id,
+                                                                               cai_acta_interv,
+                                                                               cai_fecha_acta_interv,
+                                                                               cai_tipo_ilicito,
+                                                                               cai_ci_remision,
+                                                                               cai_fecha_ci_remision,
+                                                                               cai_fecha_pres_descargos,
+                                                                               cai_inf_descargo,
+                                                                               cai_fecha_inf_descargo,
+                                                                               cai_numero_rfs,
+                                                                               cai_fecha_rfs,
+                                                                               cai_numero_rs,
+                                                                               cai_fecha_rs,
+                                                                               cai_num,
+                                                                               cai_lstope,
+                                                                               cai_usuario,
+                                                                               cai_fecsys,
+                                                                               cai_numero_informe,
+                                                                               cai_fecha_informe,
+                                                                               cai_gerencia_legal,
+                                                                               cai_fecha_not_ai,
+                                                                               cai_tipo_not_ai,
+                                                                               cai_resultado_des,
+                                                                               cai_tipo_resolucion)
+                                                    SELECT   prm_id,
+                                                             a.cai_acta_interv,
+                                                             a.cai_fecha_acta_interv,
+                                                             a.cai_tipo_ilicito,
+                                                             a.cai_ci_remision,
+                                                             a.cai_fecha_ci_remision,
+                                                             TO_DATE (
+                                                                 prm_fecha_pres_descargos,
+                                                                 'dd/mm/yyyy'),
+                                                             prm_inf_descargo,
+                                                             TO_DATE (
+                                                                 prm_fecha_inf_descargo,
+                                                                 'dd/mm/yyyy'),
+                                                             prm_numero_rfs,
+                                                             TO_DATE (
+                                                                 prm_fecha_rfs,
+                                                                 'dd/mm/yyyy'),
+                                                             prm_numero_rs,
+                                                             TO_DATE (
+                                                                 prm_fecha_rs,
+                                                                 'dd/mm/yyyy'),
+                                                             0,
+                                                             'U',
+                                                             prm_usuario,
+                                                             SYSDATE,
+                                                             a.cai_numero_informe,
+                                                             a.cai_fecha_informe,
+                                                             a.cai_gerencia_legal,
+                                                             a.cai_fecha_not_ai,
+                                                             a.cai_tipo_not_ai,
+                                                             prm_resultado_des,
+                                                             prm_tipo_resolucion
+                                                      FROM   fis_con_actainter a
+                                                     WHERE   ctl_control_id =
+                                                                 prm_id
+                                                             AND cai_num =
+                                                                    existe
+                                                             AND ROWNUM = 1;
+
+                                                RETURN 'CORRECTOSe registr&oacute; correctamente la Acta de Intervenci&oacute;n';
+                                            END IF;
+                                        ELSE
+                                            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
+                                        END IF;
+                                    END IF;
+                                END IF;
                             END IF;
                         END IF;
-
-                        RETURN 'CORRECTOSe modific&oacute; correctamente la Acta de Intervenci&oacute;n';
                     END IF;
                 END IF;
             END IF;
-        END IF;
-
-        IF estado = 'CONCLUIDO'
-        THEN
-            SELECT   COUNT (1)
-              INTO   existe
-              FROM   fis_con_actainter a
-             WHERE       a.ctl_control_id = prm_id
-                     AND a.cai_num = 0
-                     AND a.cai_lstope = 'U';
-
-            IF existe = 0
-            THEN
-                RETURN 'No tiene registr&oacute; de Acta de Intervenci&oacute;n';
-            ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_con_actainter a
-                 WHERE   a.ctl_control_id = prm_id;
-
-                UPDATE   fis_con_actainter
-                   SET   cai_num = existe
-                 WHERE   ctl_control_id = prm_id AND cai_num = 0;
-
-                INSERT INTO fis_con_actainter (ctl_control_id,
-                                               cai_acta_interv,
-                                               cai_fecha_acta_interv,
-                                               cai_tipo_ilicito,
-                                               cai_ci_remision,
-                                               cai_fecha_ci_remision,
-                                               cai_fecha_pres_descargos,
-                                               cai_inf_descargo,
-                                               cai_fecha_inf_descargo,
-                                               cai_numero_rfs,
-                                               cai_fecha_rfs,
-                                               cai_numero_rs,
-                                               cai_fecha_rs,
-                                               cai_num,
-                                               cai_lstope,
-                                               cai_usuario,
-                                               cai_fecsys,
-                                               cai_numero_informe,
-                                               cai_fecha_informe,
-                                               cai_gerencia_legal,
-                                               cai_fecha_not_ai,
-                                               cai_tipo_not_ai,
-                                               cai_resultado_des,
-                                               cai_tipo_resolucion)
-                    SELECT   prm_id,
-                             a.cai_acta_interv,
-                             a.cai_fecha_acta_interv,
-                             a.cai_tipo_ilicito,
-                             a.cai_ci_remision,
-                             a.cai_fecha_ci_remision,
-                             TO_DATE (prm_fecha_pres_descargos, 'dd/mm/yyyy'),
-                             prm_inf_descargo,
-                             TO_DATE (prm_fecha_inf_descargo, 'dd/mm/yyyy'),
-                             prm_numero_rfs,
-                             TO_DATE (prm_fecha_rfs, 'dd/mm/yyyy'),
-                             prm_numero_rs,
-                             TO_DATE (prm_fecha_rs, 'dd/mm/yyyy'),
-                             0,
-                             'U',
-                             prm_usuario,
-                             SYSDATE,
-                             a.cai_numero_informe,
-                             a.cai_fecha_informe,
-                             a.cai_gerencia_legal,
-                             a.cai_fecha_not_ai,
-                             a.cai_tipo_not_ai,
-                             prm_resultado_des,
-                             prm_tipo_resolucion
-                      FROM   fis_con_actainter a
-                     WHERE       ctl_control_id = prm_id
-                             AND cai_num = existe
-                             AND ROWNUM = 1;
-
-                RETURN 'CORRECTOSe registr&oacute; correctamente la Acta de Intervenci&oacute;n';
-            END IF;
-        ELSE
-            RETURN 'La fiscalizaci&oacute;n no se encuentra en el estado correcto';
         END IF;
     EXCEPTION
         WHEN OTHERS

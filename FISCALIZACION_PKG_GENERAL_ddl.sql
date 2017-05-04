@@ -916,7 +916,7 @@ AS
         THEN
             IF is_number (numero) = 0
             THEN
-                RETURN 'EL N&Uacute;MERO DE ORDEN NO ES V&Aacute;LIDO';
+                RETURN 'El N&uacute;mero de Orden no es v&aacute;lido';
             END IF;
 
             SELECT   COUNT (1)
@@ -931,7 +931,7 @@ AS
 
             IF existe = 0
             THEN
-                RETURN 'NO EXISTE EL CODIGO DE CONTROL';
+                RETURN 'No existe la Orden';
             ELSE
                 SELECT   a.ctl_control_id
                   INTO   res
@@ -948,7 +948,7 @@ AS
         ELSE
             IF INSTR (numero, '/') = 0
             THEN
-                RETURN 'EL N&Uacute;MERO DE ORDEN AMPLIATORIA NO ES V&Aacute;LIDO';
+                RETURN 'El N&uacute;mero de Orden Ampliatoria no es v&aacute;lido';
             ELSE
                 IF is_number (SUBSTR (numero, 0, INSTR (numero, '/') - 1)) =
                        0
@@ -958,7 +958,7 @@ AS
                                     LENGTH (numero) - INSTR (numero, '/'))) =
                          0
                 THEN
-                    RETURN 'EL N&Uacute;MERO DE ORDEN AMPLIATORIA NO ES V&Aacute;LIDO';
+                    RETURN 'El N&uacute;mero de Orden Ampliatoria no es v&aacute;lido';
                 END IF;
             END IF;
 
@@ -975,7 +975,7 @@ AS
 
             IF existe = 0
             THEN
-                RETURN 'NO EXISTE EL CODIGO DE CONTROL';
+                RETURN 'No existe la Orden';
             ELSE
                 SELECT   a.ctl_control_id
                   INTO   res
