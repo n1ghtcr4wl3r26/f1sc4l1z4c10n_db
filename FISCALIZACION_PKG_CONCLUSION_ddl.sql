@@ -2433,9 +2433,7 @@ IS
                          AND NOT a.cai_fecha_ci_remision IS NULL
                          AND NOT cai_numero_informe IS NULL
                          AND NOT cai_fecha_informe IS NULL
-                         AND NOT cai_gerencia_legal IS NULL
-                         AND NOT cai_fecha_not_ai IS NULL
-                         AND NOT cai_tipo_not_ai IS NULL;
+                         AND NOT cai_gerencia_legal IS NULL;
 
                 /*AND NOT a.cai_fecha_pres_descargos IS NULL
                 AND NOT a.cai_inf_descargo IS NULL
@@ -2605,7 +2603,9 @@ IS
                              AND NOT a.cai_resultado_des IS NULL
                              AND NOT a.cai_tipo_resolucion IS NULL
                              AND NOT a.cai_numero_rs IS NULL
-                             AND NOT a.cai_fecha_rs IS NULL;
+                             AND NOT a.cai_fecha_rs IS NULL
+                             AND NOT cai_fecha_not_ai IS NULL
+                             AND NOT cai_tipo_not_ai IS NULL;
 
                     IF existe = 0
                     THEN
