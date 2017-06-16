@@ -90,7 +90,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_reporte
-/* Formatted on 13-jun.-2017 20:08:39 (QP5 v5.126) */
+/* Formatted on 16-jun.-2017 18:47:51 (QP5 v5.126) */
 IS
     FUNCTION devuelve_tributos (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -4974,17 +4974,177 @@ IS
                                            prm_fecha    IN VARCHAR2)
         RETURN cursortype
     IS
-        ct              cursortype;
-        fecha_reporte   DATE;
+        ct                cursortype;
+        fecha_reporte     DATE;
+        vcontravdui       NUMBER (18, 2);
+        vcontravorden     NUMBER (18, 2);
+
+        vsancioncontrab   NUMBER (18, 2);
+        vsanciondefraud   NUMBER (18, 2);
+        vsanciondelito    NUMBER (18, 2);
     BEGIN
+        --Determinar las sancones por ilicitos
+
+        SELECT   SUM (cif)
+          INTO   vsancioncontrab
+          FROM   (SELECT   i.saditm_stat_val cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CONTRABANDO CONTRAVENCIONAL'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   ret_cif_bob cif
+                    FROM   fis_alcance a, fis_resultados_tramite b
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.ret_num = 0
+                           AND b.ret_lstope = 'U'
+                           AND ret_ilicito = 'CONTRABANDO CONTRAVENCIONAL')
+                 tbl;
+
+ SELECT   SUM (cif)
+          INTO   vsancioncontrab
+          FROM   (SELECT   i.saditm_stat_val cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CONTRABANDO DELITO'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   ret_cif_bob cif
+                    FROM   fis_alcance a, fis_resultados_tramite b
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.ret_num = 0
+                           AND b.ret_lstope = 'U'
+                           AND ret_ilicito = 'CONTRABANDO DELITO')
+                 tbl;
+
+ SELECT   SUM (cif)
+          INTO   vsancioncontrab
+          FROM   (SELECT   i.saditm_stat_val cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'OTROS DELITOS'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   ret_cif_bob cif
+                    FROM   fis_alcance a, fis_resultados_tramite b
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.ret_num = 0
+                           AND b.ret_lstope = 'U'
+                           AND ret_ilicito = 'OTROS DELITOS')
+                 tbl;
+
+
+        --Determinar las contravenciones
+        SELECT   ROUND (SUM (contravdui), 2), ROUND (SUM (contravorden), 2)
+          INTO   vcontravdui, vcontravorden
+          FROM   (SELECT   SUM (b.res_contrav)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravdui,
+                           SUM (b.res_contravorden)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravorden
+                    FROM   fis_alcance a, fis_resultados b
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                  UNION
+                  SELECT   0 contravdui,
+                           SUM (NVL (b.ret_contravorden, 0))
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravorden
+                    FROM   fis_alcance a, fis_resultados_tramite b
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.ret_num = 0
+                           AND b.ret_lstope = 'U') tbl;
+
         OPEN ct FOR
-            SELECT   45 sancionomision,
-                     55 contravdui,
-                     65 contravorden,
-                     75 sancioncontrabando,
-                     85 sanciondefraudacion,
-                     95 delito
+            SELECT   0 sancionomision,
+                     NVL(vcontravdui,0) contravdui,
+                     NVL(vcontravorden,0) contravorden,
+                     NVL(vsancioncontrab,0) sancioncontrabando,
+                     NVL(vsanciondefraud,0) sanciondefraudacion,
+                     NVL(vsanciondelito,0) delito
               FROM   DUAL;
+
+
 
         RETURN ct;
     END;

@@ -26,33 +26,6 @@ SELECT *
   
   
   
-SELECT sum(b.res_contrav)* pkg_reporte.tipocambio (
-                                         TO_date ('14/06/2017', 'dd/mm/yyyy'),
-                                     'UFV') contravdui, sum(b.res_contravorden)*  pkg_reporte.tipocambio (
-                                         TO_date ('14/06/2017', 'dd/mm/yyyy'),
-                                     'UFV') contravorden
-  FROM fis_alcance a, fis_resultados b
-  where a.ctl_control_id = '201754'
-  and a.alc_num = 0
-  and a.alc_lstope = 'U'
-  and a.alc_alcance_id = b.alc_alcance_id
-  and b.res_num = 0
-  and b.res_lstope = 'U'  
-  
-  
-  
-  
-  SELECT 0 contravdui,sum(nvl(b.ret_contravorden,0)) , sum(nvl(b.ret_contravorden,0))*  pkg_reporte.tipocambio (
-                                         TO_date ('14/06/2017', 'dd/mm/yyyy'),
-                                     'UFV') contravorden
-  FROM fis_alcance a, fis_resultados_tramite b
-  where a.ctl_control_id = '201754'
-  and a.alc_num = 0
-  and a.alc_lstope = 'U'
-  and a.alc_alcance_id = b.alc_alcance_id
-  and b.ret_num = 0
-  and b.ret_lstope = 'U'  
-  
   
   
   SELECT a.alc_alcance_id, a.ret_mercancia, a.ret_fob_usd,
