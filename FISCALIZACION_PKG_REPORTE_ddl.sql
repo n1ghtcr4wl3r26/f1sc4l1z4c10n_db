@@ -51,6 +51,11 @@ IS
                                 prm_fecha    IN VARCHAR2)
         RETURN DATE;
 
+    FUNCTION aumentardiashabiles (prm_gerencia   IN VARCHAR2,
+                                  prm_fecha      IN VARCHAR2,
+                                  prm_dias   IN NUMBER)
+        RETURN DATE;
+
     FUNCTION c_diligencia1_x (sid IN VARCHAR2)
         RETURN cursortype;
 
@@ -90,7 +95,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_reporte
-/* Formatted on 16-jun.-2017 18:47:51 (QP5 v5.126) */
+/* Formatted on 19-jun.-2017 17:45:54 (QP5 v5.126) */
 IS
     FUNCTION devuelve_tributos (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -5023,7 +5028,7 @@ IS
                            AND ret_ilicito = 'CONTRABANDO CONTRAVENCIONAL')
                  tbl;
 
- SELECT   SUM (cif)
+        SELECT   SUM (cif)
           INTO   vsancioncontrab
           FROM   (SELECT   i.saditm_stat_val cif
                     FROM   fis_alcance a,
@@ -5058,10 +5063,9 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.ret_num = 0
                            AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'CONTRABANDO DELITO')
-                 tbl;
+                           AND ret_ilicito = 'CONTRABANDO DELITO') tbl;
 
- SELECT   SUM (cif)
+        SELECT   SUM (cif)
           INTO   vsancioncontrab
           FROM   (SELECT   i.saditm_stat_val cif
                     FROM   fis_alcance a,
@@ -5096,8 +5100,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.ret_num = 0
                            AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'OTROS DELITOS')
-                 tbl;
+                           AND ret_ilicito = 'OTROS DELITOS') tbl;
 
 
         --Determinar las contravenciones
@@ -5137,11 +5140,11 @@ IS
 
         OPEN ct FOR
             SELECT   0 sancionomision,
-                     NVL(vcontravdui,0) contravdui,
-                     NVL(vcontravorden,0) contravorden,
-                     NVL(vsancioncontrab,0) sancioncontrabando,
-                     NVL(vsanciondefraud,0) sanciondefraudacion,
-                     NVL(vsanciondelito,0) delito
+                     NVL (vcontravdui, 0) contravdui,
+                     NVL (vcontravorden, 0) contravorden,
+                     NVL (vsancioncontrab, 0) sancioncontrabando,
+                     NVL (vsanciondefraud, 0) sanciondefraudacion,
+                     NVL (vsanciondelito, 0) delito
               FROM   DUAL;
 
 
@@ -5185,7 +5188,44 @@ IS
                            + SUM (t.iehd_dt)
                            + SUM (t.icd_dt),
                            2)
-                           adeudo_totalbs
+                           adeudo_totalbs,
+                       ROUND (
+                             SUM (t.to_ga)
+                           + SUM (t.to_iva)
+                           + SUM (t.to_ice)
+                           + SUM (t.to_iehd)
+                           + SUM (t.to_icd),
+                           2)
+                           totot,
+                       t.tc_ufvhoy / t.tc_ufvfecvenc facufvact,
+                       ROUND (
+                           (  SUM (t.to_ga)
+                            + SUM (t.to_iva)
+                            + SUM (t.to_ice)
+                            + SUM (t.to_iehd)
+                            + SUM (t.to_icd))
+                           * t.tc_ufvhoy
+                           / t.tc_ufvfecvenc,
+                           2)
+                           toactbs,
+                       t.fec_notvc,
+                       TO_CHAR (
+                           pkg_reporte.aumentardiashabiles (
+                               pkg_general.devuelve_gerencia (prm_codigo),
+                               t.fec_notvc,
+                               10),
+                           'dd/mm/yyyy')
+                           fec_notvc10,
+                       t.fec_notrdvc,
+                       TRUNC (fecha_reporte)
+                       - TRUNC(pkg_reporte.aumentardiashabiles (
+                                   pkg_general.devuelve_gerencia (prm_codigo),
+                                   t.fec_notvc,
+                                   10))
+                           dias_notvc,
+                       TRUNC (fecha_reporte)
+                       - TRUNC (TO_DATE (t.fec_notrdvc, 'dd/mm/yyyy'))
+                           dias_notrdvc
                 FROM   (SELECT   iu.itm_nber itm,
                                  ia.saditm_hs_cod || ia.saditm_hsprec_cod
                                      nandina_ant,
@@ -5322,7 +5362,12 @@ IS
                                      NVL (icdu.saditm_tax_amount, 0)
                                      - NVL (icda.saditm_tax_amount, 0),
                                      u.sad_top_cod)
-                                     icd_dt
+                                     icd_dt,
+                                 TO_CHAR (vc.cvc_fecha_notificacion,
+                                          'dd/mm/yyyy')
+                                     fec_notvc,
+                                 TO_CHAR (vc.cvc_fecha_rd, 'dd/mm/yyyy')
+                                     fec_notrdvc
                           FROM   ops$asy.sad_gen u,
                                  ops$asy.sad_gen a,
                                  ops$asy.sad_itm iu,
@@ -5340,7 +5385,8 @@ IS
                                  ops$asy.sad_itm_vim vu,
                                  ops$asy.sad_itm_vim va,
                                  fis_alcance f,
-                                 fis_notificacion n
+                                 fis_notificacion n,
+                                 fis_con_viscargo vc
                          WHERE       u.key_year = a.key_year
                                  AND u.key_cuo = a.key_cuo
                                  AND u.key_dec IS NOT NULL
@@ -5478,6 +5524,9 @@ IS
                                  AND f.ctl_control_id = n.ctl_control_id
                                  AND n.not_num = 0
                                  AND n.not_lstope = 'U'
+                                 AND vc.cvc_num = 0
+                                 AND vc.cvc_lstope = 'U'
+                                 AND vc.ctl_control_id = f.ctl_control_id
                         UNION
                         SELECT   iu.itm_nber itm,
                                  ia.saditm_hs_cod || ia.saditm_hsprec_cod
@@ -5615,7 +5664,12 @@ IS
                                      NVL (icdu.saditm_tax_amount, 0)
                                      - NVL (icda.saditm_tax_amount, 0),
                                      u.sad_top_cod)
-                                     icd_dt
+                                     icd_dt,
+                                 TO_CHAR (vc.cvc_fecha_notificacion,
+                                          'dd/mm/yyyy')
+                                     fec_notvc,
+                                 TO_CHAR (vc.cvc_fecha_rd, 'dd/mm/yyyy')
+                                     fec_notrdvc
                           FROM   ops$asy.sad_gen u,
                                  ops$asy.sad_gen a,
                                  ops$asy.sad_itm iu,
@@ -5633,7 +5687,8 @@ IS
                                  ops$asy.sad_itm_vim vu,
                                  ops$asy.sad_itm_vim va,
                                  fis_alcance f,
-                                 fis_notificacion n
+                                 fis_notificacion n,
+                                 fis_con_viscargo vc
                          WHERE       u.key_year = a.key_year
                                  AND u.key_cuo = a.key_cuo
                                  AND u.key_dec IS NULL
@@ -5769,11 +5824,18 @@ IS
                                  AND f.alc_lstope = 'U'
                                  AND f.ctl_control_id = n.ctl_control_id
                                  AND n.not_num = 0
-                                 AND n.not_lstope = 'U') t
+                                 AND n.not_lstope = 'U'
+                                 AND vc.cvc_num = 0
+                                 AND vc.cvc_lstope = 'U'
+                                 AND vc.ctl_control_id = f.ctl_control_id) t
             GROUP BY   t.reg_year,
                        t.key_cuo,
                        t.reg_nber,
-                       t.fecha_reg
+                       t.fecha_reg,
+                       t.fec_notvc,
+                       t.fec_notrdvc,
+                       t.tc_ufvhoy,
+                       t.tc_ufvfecvenc
             ORDER BY   1, 2, 3;
 
         RETURN ct;
@@ -5863,6 +5925,63 @@ IS
         END LOOP;
 
         RETURN v_fechavencimiento;
+    END;
+
+    FUNCTION aumentardiashabiles (prm_gerencia   IN VARCHAR2,
+                                  prm_fecha      IN VARCHAR2,
+                                  prm_dias       IN NUMBER)
+        RETURN DATE
+    IS
+        v_valor              DATE;
+        v_fecharegistro      DATE;
+        v_fechavencimiento   DATE;
+        v_fechatemp          DATE;
+        v_plazo              NUMBER;
+        v_i                  NUMBER;
+        v_cant               NUMBER;
+        v_aduana             VARCHAR2 (4);
+    BEGIN
+        IF prm_fecha IS NULL
+        THEN
+            RETURN NULL;
+        ELSE
+            v_plazo := prm_dias;
+            v_i := 1;
+            v_fechatemp := TO_DATE (prm_fecha, 'dd/mm/yyyy') + 1;
+
+            SELECT   DECODE (prm_gerencia,
+                             'GNF', '201',
+                             'GRL', '201',
+                             'GRO', '401',
+                             'GRC', '301',
+                             'GRS', '701',
+                             'GRT', '601',
+                             'GRP', '501',
+                             '201')
+              INTO   v_aduana
+              FROM   DUAL;
+
+
+            WHILE v_i <= v_plazo
+            LOOP
+                SELECT   COUNT ( * )
+                  INTO   v_cant
+                  FROM   ops$asy.unholtab
+                 WHERE       cuo_cod = v_aduana
+                         AND hol_day = v_fechatemp
+                         AND lst_ope = 'U';
+
+                IF v_cant = 0
+                THEN                                        --Si no es feriado
+                    v_i := v_i + 1;
+                END IF;
+
+                v_fechavencimiento := v_fechatemp;
+                v_fechatemp := v_fechatemp + 1;
+            END LOOP;
+
+            RETURN v_fechavencimiento;
+        END IF;
     END;
 
     FUNCTION c_diligencia1_x (sid IN VARCHAR2)

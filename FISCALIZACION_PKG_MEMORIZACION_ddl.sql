@@ -1500,13 +1500,13 @@ AS
         END IF;
 
         --RETURN 'No se encuentra habilitado el registro de Controles Diferidos, los mismos deben realizarse en el sistema SICODIF';
-        IF     prm_riesgodelito IS NULL
+       /* IF     prm_riesgodelito IS NULL
            AND prm_riesgosubval IS NULL
            AND prm_riesgoclas IS NULL
            AND prm_riesgocontrab IS NULL
         THEN
             RETURN 'Debe seleccionar por lo menos un riesgo identificado';
-        END IF;
+        END IF;*/
 
         IF     prm_tribga IS NULL
            AND prm_tribiva IS NULL
@@ -11861,7 +11861,7 @@ AS
         IF v_tipocontrol = 'AMPLIATORIA DIFERIDO'
            OR v_tipocontrol = 'AMPLIATORIA POSTERIOR'
         THEN
-            RETURN 'NO SE PUEDE REGISTRAR ALCANCE DE UNA FISCALIZACI&Oacute;N AMPLIATORIA';
+            RETURN 'No se puede registrar alcance de una fiscalizaci'||chr(243)||'n ampliatoria';
         END IF;
 
         RETURN 'CORRECTO';

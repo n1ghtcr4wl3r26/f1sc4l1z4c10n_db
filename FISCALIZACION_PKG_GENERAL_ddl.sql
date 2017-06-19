@@ -59,6 +59,9 @@ IS
                               numero     IN VARCHAR2)
         RETURN VARCHAR2;
 
+    FUNCTION devuelve_gerencia (codigo IN VARCHAR2)
+        RETURN VARCHAR2;
+
     FUNCTION devuelve_fis_asignados (codigo VARCHAR)
         RETURN cursortype;
 
@@ -100,7 +103,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 2-may.-2017 4:27:23 (QP5 v5.126) */
+/* Formatted on 19-jun.-2017 16:28:34 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -999,6 +1002,34 @@ AS
                    || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
     END;
 
+    FUNCTION devuelve_gerencia (codigo IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res      VARCHAR2 (50) := 0;
+        existe   NUMBER;
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = codigo
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+        IF existe = 0
+        THEN
+            RETURN '-';
+        ELSE
+            SELECT   a.ctl_cod_gerencia
+              INTO   res
+              FROM   fis_control a
+             WHERE       a.ctl_control_id = codigo
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U';
+
+            RETURN res;
+        END IF;
+    END;
+
     FUNCTION devuelve_fis_asignados (codigo VARCHAR)
         RETURN cursortype
     IS
@@ -1352,7 +1383,11 @@ AS
         res    VARCHAR2 (50) := 'NOCORRECTO';
         cont   NUMBER (10);
     BEGIN
-        IF (prm_opcion = 'NOTIFICACION' OR prm_opcion = 'AMPLIACION' OR prm_opcion = 'GENERACION' OR prm_opcion = 'SUBIR' OR prm_opcion = 'EXCEL')
+        IF (   prm_opcion = 'NOTIFICACION'
+            OR prm_opcion = 'AMPLIACION'
+            OR prm_opcion = 'GENERACION'
+            OR prm_opcion = 'SUBIR'
+            OR prm_opcion = 'EXCEL')
         THEN
             SELECT   COUNT (1)
               INTO   cont
@@ -1375,12 +1410,13 @@ AS
         IF (prm_opcion = 'CONCLUSION')
         THEN
             SELECT   COUNT (1)
-                  INTO   cont
-                  FROM   usuario.usu_rol a
-                 WHERE   a.usucodusu = prm_usuario
-                         AND a.rol_cod = 'GNF_LEGAL'
-                         AND a.lst_ope = 'U'
-                         AND a.ult_ver = 0;
+              INTO   cont
+              FROM   usuario.usu_rol a
+             WHERE       a.usucodusu = prm_usuario
+                     AND a.rol_cod = 'GNF_LEGAL'
+                     AND a.lst_ope = 'U'
+                     AND a.ult_ver = 0;
+
             IF cont = 0
             THEN
                 SELECT   COUNT (1)
@@ -1404,13 +1440,15 @@ AS
             END IF;
         END IF;
 
-        IF (prm_opcion = 'ALCANCE' OR prm_opcion = 'ASIGNACION' OR prm_opcion = 'REGISTRA')
+        IF (   prm_opcion = 'ALCANCE'
+            OR prm_opcion = 'ASIGNACION'
+            OR prm_opcion = 'REGISTRA')
         THEN
             SELECT   COUNT (1)
               INTO   cont
               FROM   usuario.usu_rol a
              WHERE   a.usucodusu = prm_usuario
-                     AND (a.rol_cod = 'GNF_JEFEUFR'
+                     AND (   a.rol_cod = 'GNF_JEFEUFR'
                           OR a.rol_cod = 'GNF_SUPERVISORUFR'
                           OR a.rol_cod = 'GNF_INVESTIGADORUFR')
                      AND a.lst_ope = 'U'

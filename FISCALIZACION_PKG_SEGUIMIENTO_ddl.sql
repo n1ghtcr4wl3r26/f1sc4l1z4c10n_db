@@ -2169,15 +2169,19 @@ IS
     BEGIN
           SELECT   SUM(DECODE (r.res_fob_usd,
                                NULL, i.sad_iitminv_valc,
+                               0, i.sad_iitminv_valc,
                                r.res_fob_usd)),
                    SUM(DECODE (r.res_flete_usd,
                                NULL, i.sad_iitmefr_valc,
+                               0, i.sad_iitmefr_valc,
                                r.res_flete_usd)),
                    SUM(DECODE (r.res_seguro_usd,
                                NULL, i.sad_iitmins_valc,
+                               0, i.sad_iitmins_valc,
                                r.res_seguro_usd)),
                    SUM(DECODE (r.res_otros_usd,
                                NULL, i.sad_iitmotc_valc,
+                               0, i.sad_iitmotc_valc,
                                r.res_otros_usd)),
                       s.sad_reg_year
                    || '/'
