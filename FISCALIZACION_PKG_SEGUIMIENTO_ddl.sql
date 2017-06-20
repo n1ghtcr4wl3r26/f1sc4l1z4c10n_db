@@ -111,7 +111,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_seguimiento
-/* Formatted on 3-may.-2017 20:27:11 (QP5 v5.126) */
+/* Formatted on 19-jun.-2017 20:35:21 (QP5 v5.126) */
 IS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -403,92 +403,117 @@ IS
             THEN
                 RETURN 'no se encuentra registrada en el control';
             ELSE
-                SELECT   COUNT (1)
-                  INTO   existe
-                  FROM   fis_resultados_tramite a
-                 WHERE       a.alc_alcance_id = prm_idalcance
-                         AND a.ret_num = 0
-                         AND a.ret_lstope = 'U';
-
-                IF existe = 0
+                IF     NOT prm_ilicito IS NULL
+                   AND NOT prm_ilicito = 'CONTRABANDO CONTRAVENCIONAL'
+                   AND NOT prm_ilicito = 'CONTRABANDO DELITO'
+                   AND NOT prm_ilicito = 'OTROS DELITOS'
                 THEN
-                    INSERT INTO fis_resultados_tramite a (a.alc_alcance_id,
-                                                          a.ret_mercancia,
-                                                          a.ret_fob_usd,
-                                                          a.ret_flete_usd,
-                                                          a.ret_seguro_usd,
-                                                          a.ret_otros_usd,
-                                                          a.ret_cif_usd,
-                                                          a.ret_cif_bob,
-                                                          a.ret_cif_ufv,
-                                                          a.ret_num,
-                                                          a.ret_lstope,
-                                                          a.ret_usuario,
-                                                          a.ret_fecsys,
-                                                          a.ret_ilicito,
-                                                          a.ret_contravorden)
-                      VALUES   (prm_idalcance,
-                                prm_mercancia,
-                                DECODE (prm_fob, '-1', NULL, prm_fob),
-                                DECODE (prm_flete, '-1', NULL, prm_flete),
-                                DECODE (prm_seguro, '-1', NULL, prm_seguro),
-                                DECODE (prm_otros, '-1', NULL, prm_otros),
-                                DECODE (prm_cifusd, '-1', NULL, prm_cifusd),
-                                DECODE (prm_cifbob, '-1', NULL, prm_cifbob),
-                                DECODE (prm_cifufv, '-1', NULL, prm_cifufv),
-                                0,
-                                'U',
-                                prm_usuario,
-                                SYSDATE,
-                                prm_ilicito,
-                                DECODE (prm_contravorden,
-                                        '-1', NULL,
-                                        prm_contravorden));
-
-                    COMMIT;
-                    RETURN 'CORRECTO';
+                    RETURN 'en el campo il&iacute;cito solo se deben colocar los siguientes valores "CONTRABANDO CONTRAVENCIONAL", "CONTRABANDO DELITO", "OTROS DELITOS" o se debe dejar vac&iacute;o';
                 ELSE
                     SELECT   COUNT (1)
                       INTO   existe
                       FROM   fis_resultados_tramite a
-                     WHERE   alc_alcance_id = prm_idalcance;
+                     WHERE       a.alc_alcance_id = prm_idalcance
+                             AND a.ret_num = 0
+                             AND a.ret_lstope = 'U';
 
-                    UPDATE   fis_resultados_tramite
-                       SET   ret_num = existe
-                     WHERE   alc_alcance_id = prm_idalcance AND ret_num = 0;
+                    IF existe = 0
+                    THEN
+                        INSERT INTO fis_resultados_tramite a (a.alc_alcance_id,
+                                                              a.ret_mercancia,
+                                                              a.ret_fob_usd,
+                                                              a.ret_flete_usd,
+                                                              a.ret_seguro_usd,
+                                                              a.ret_otros_usd,
+                                                              a.ret_cif_usd,
+                                                              a.ret_cif_bob,
+                                                              a.ret_cif_ufv,
+                                                              a.ret_num,
+                                                              a.ret_lstope,
+                                                              a.ret_usuario,
+                                                              a.ret_fecsys,
+                                                              a.ret_ilicito,
+                                                              a.ret_contravorden)
+                          VALUES   (prm_idalcance,
+                                    prm_mercancia,
+                                    DECODE (prm_fob, '-1', NULL, prm_fob),
+                                    DECODE (prm_flete, '-1', NULL, prm_flete),
+                                    DECODE (prm_seguro,
+                                            '-1', NULL,
+                                            prm_seguro),
+                                    DECODE (prm_otros, '-1', NULL, prm_otros),
+                                    DECODE (prm_cifusd,
+                                            '-1', NULL,
+                                            prm_cifusd),
+                                    DECODE (prm_cifbob,
+                                            '-1', NULL,
+                                            prm_cifbob),
+                                    DECODE (prm_cifufv,
+                                            '-1', NULL,
+                                            prm_cifufv),
+                                    0,
+                                    'U',
+                                    prm_usuario,
+                                    SYSDATE,
+                                    prm_ilicito,
+                                    DECODE (prm_contravorden,
+                                            '-1', NULL,
+                                            prm_contravorden));
 
-                    INSERT INTO fis_resultados_tramite a (a.alc_alcance_id,
-                                                          a.ret_mercancia,
-                                                          a.ret_fob_usd,
-                                                          a.ret_flete_usd,
-                                                          a.ret_seguro_usd,
-                                                          a.ret_otros_usd,
-                                                          a.ret_cif_usd,
-                                                          a.ret_cif_bob,
-                                                          a.ret_cif_ufv,
-                                                          a.ret_num,
-                                                          a.ret_lstope,
-                                                          a.ret_usuario,
-                                                          a.ret_fecsys,
-                                                          a.ret_ilicito,
-                                                          a.ret_contravorden)
-                      VALUES   (prm_idalcance,
-                                prm_mercancia,
-                                DECODE (prm_fob, '-1', NULL, prm_fob),
-                                DECODE (prm_flete, '-1', NULL, prm_flete),
-                                DECODE (prm_seguro, '-1', NULL, prm_seguro),
-                                DECODE (prm_otros, '-1', NULL, prm_otros),
-                                DECODE (prm_cifusd, '-1', NULL, prm_cifusd),
-                                DECODE (prm_cifbob, '-1', NULL, prm_cifbob),
-                                DECODE (prm_cifufv, '-1', NULL, prm_cifufv),
-                                0,
-                                'U',
-                                prm_usuario,
-                                SYSDATE,
-                                prm_ilicito,
-                                prm_contravorden);
+                        COMMIT;
+                        RETURN 'CORRECTO';
+                    ELSE
+                        SELECT   COUNT (1)
+                          INTO   existe
+                          FROM   fis_resultados_tramite a
+                         WHERE   alc_alcance_id = prm_idalcance;
 
-                    RETURN 'CORRECTO';
+                        UPDATE   fis_resultados_tramite
+                           SET   ret_num = existe
+                         WHERE   alc_alcance_id = prm_idalcance
+                                 AND ret_num = 0;
+
+                        INSERT INTO fis_resultados_tramite a (a.alc_alcance_id,
+                                                              a.ret_mercancia,
+                                                              a.ret_fob_usd,
+                                                              a.ret_flete_usd,
+                                                              a.ret_seguro_usd,
+                                                              a.ret_otros_usd,
+                                                              a.ret_cif_usd,
+                                                              a.ret_cif_bob,
+                                                              a.ret_cif_ufv,
+                                                              a.ret_num,
+                                                              a.ret_lstope,
+                                                              a.ret_usuario,
+                                                              a.ret_fecsys,
+                                                              a.ret_ilicito,
+                                                              a.ret_contravorden)
+                          VALUES   (prm_idalcance,
+                                    prm_mercancia,
+                                    DECODE (prm_fob, '-1', NULL, prm_fob),
+                                    DECODE (prm_flete, '-1', NULL, prm_flete),
+                                    DECODE (prm_seguro,
+                                            '-1', NULL,
+                                            prm_seguro),
+                                    DECODE (prm_otros, '-1', NULL, prm_otros),
+                                    DECODE (prm_cifusd,
+                                            '-1', NULL,
+                                            prm_cifusd),
+                                    DECODE (prm_cifbob,
+                                            '-1', NULL,
+                                            prm_cifbob),
+                                    DECODE (prm_cifufv,
+                                            '-1', NULL,
+                                            prm_cifufv),
+                                    0,
+                                    'U',
+                                    prm_usuario,
+                                    SYSDATE,
+                                    prm_ilicito,
+                                    prm_contravorden);
+
+                        RETURN 'CORRECTO';
+                    END IF;
                 END IF;
             END IF;
         END IF;
@@ -583,45 +608,33 @@ IS
                 THEN
                     RETURN 'no se encuentra registrado el &iacute;tem en el control';
                 ELSE
-                    v_numero := prm_item;
-
-                    SELECT   DECODE (
-                                 INSTR (v_numero, '.'),
-                                 0,
-                                 v_numero,
-                                 SUBSTR (v_numero,
-                                         0,
-                                         INSTR (v_numero, '.') - 1))
-                      INTO   v_numero
-                      FROM   DUAL;
-
-                    SELECT   SUBSTR (prm_dui, 0, 4),
-                             SUBSTR (prm_dui, 6, 3),
-                             SUBSTR (prm_dui, 12, LENGTH (prm_dui) - 11)
-                      INTO   v_reg_year, v_key_cuo, v_reg_serial
-                      FROM   DUAL;
-
-                    SELECT   COUNT (1)
-                      INTO   existe
-                      FROM   ops$asy.sad_gen a
-                     WHERE       a.sad_reg_year = v_reg_year
-                             AND a.key_cuo = v_key_cuo
-                             AND a.sad_reg_serial = 'C'
-                             AND a.sad_reg_nber = v_reg_serial
-                             AND a.sad_num = 0;
-
-                    IF existe = 0
+                    IF     NOT prm_ilicito IS NULL
+                       AND NOT prm_ilicito = 'CONTRABANDO CONTRAVENCIONAL'
+                       AND NOT prm_ilicito = 'CONTRABANDO DELITO'
+                       AND NOT prm_ilicito = 'OTROS DELITOS'
                     THEN
-                        RETURN 'no existe la declaraci&oacute;n';
+                        RETURN 'en el campo il&iacute;cito solo se deben colocar los siguientes valores "CONTRABANDO CONTRAVENCIONAL", "CONTRABANDO DELITO", "OTROS DELITOS" o se debe dejar vac&iacute;o';
                     ELSE
-                        SELECT   a.key_year,
-                                 a.key_cuo,
-                                 a.key_dec,
-                                 a.key_nber
-                          INTO   v_key_year,
-                                 v_key_cuo,
-                                 v_key_dec,
-                                 v_key_nber
+                        v_numero := prm_item;
+
+                        SELECT   DECODE (
+                                     INSTR (v_numero, '.'),
+                                     0,
+                                     v_numero,
+                                     SUBSTR (v_numero,
+                                             0,
+                                             INSTR (v_numero, '.') - 1))
+                          INTO   v_numero
+                          FROM   DUAL;
+
+                        SELECT   SUBSTR (prm_dui, 0, 4),
+                                 SUBSTR (prm_dui, 6, 3),
+                                 SUBSTR (prm_dui, 12, LENGTH (prm_dui) - 11)
+                          INTO   v_reg_year, v_key_cuo, v_reg_serial
+                          FROM   DUAL;
+
+                        SELECT   COUNT (1)
+                          INTO   existe
                           FROM   ops$asy.sad_gen a
                          WHERE       a.sad_reg_year = v_reg_year
                                  AND a.key_cuo = v_key_cuo
@@ -629,47 +642,45 @@ IS
                                  AND a.sad_reg_nber = v_reg_serial
                                  AND a.sad_num = 0;
 
-
-                        SELECT   COUNT (1)
-                          INTO   existe
-                          FROM   ops$asy.sad_itm a
-                         WHERE       a.key_year = v_key_year
-                                 AND a.key_cuo = v_key_cuo
-                                 AND NVL (a.key_dec, 0) = NVL (v_key_dec, 0)
-                                 AND a.key_nber = v_key_nber
-                                 AND a.itm_nber = v_numero;
-
-
                         IF existe = 0
                         THEN
-                            RETURN    'no existe el n&uacute;mero de item '
-                                   || v_numero
-                                   || ' en la declaraci&oacute;n';
+                            RETURN 'no existe la declaraci&oacute;n';
                         ELSE
+                            SELECT   a.key_year,
+                                     a.key_cuo,
+                                     a.key_dec,
+                                     a.key_nber
+                              INTO   v_key_year,
+                                     v_key_cuo,
+                                     v_key_dec,
+                                     v_key_nber
+                              FROM   ops$asy.sad_gen a
+                             WHERE       a.sad_reg_year = v_reg_year
+                                     AND a.key_cuo = v_key_cuo
+                                     AND a.sad_reg_serial = 'C'
+                                     AND a.sad_reg_nber = v_reg_serial
+                                     AND a.sad_num = 0;
+
+
                             SELECT   COUNT (1)
                               INTO   existe
-                              FROM   fis_alcance a
-                             WHERE       alc_tipo_tramite = 'DUI'
-                                     AND alc_gestion = v_reg_year
-                                     AND alc_aduana = v_key_cuo
-                                     AND alc_numero = v_reg_serial
-                                     AND alc_num = 0
-                                     AND alc_lstope = 'U'
-                                     AND ctl_control_id = prm_codigo;
+                              FROM   ops$asy.sad_itm a
+                             WHERE   a.key_year = v_key_year
+                                     AND a.key_cuo = v_key_cuo
+                                     AND NVL (a.key_dec, 0) =
+                                            NVL (v_key_dec, 0)
+                                     AND a.key_nber = v_key_nber
+                                     AND a.itm_nber = v_numero;
+
 
                             IF existe = 0
                             THEN
-                                RETURN 'no se encuentra registrada en el control '
-                                       || v_reg_year
-                                       || '/'
-                                       || v_key_cuo
-                                       || '/C-'
-                                       || v_reg_serial
-                                       || ' - '
-                                       || prm_codigo;
+                                RETURN 'no existe el n&uacute;mero de item '
+                                       || v_numero
+                                       || ' en la declaraci&oacute;n';
                             ELSE
-                                SELECT   alc_alcance_id, alc_tipo_alcance
-                                  INTO   v_alcance, v_tipo
+                                SELECT   COUNT (1)
+                                  INTO   existe
                                   FROM   fis_alcance a
                                  WHERE       alc_tipo_tramite = 'DUI'
                                          AND alc_gestion = v_reg_year
@@ -679,21 +690,239 @@ IS
                                          AND alc_lstope = 'U'
                                          AND ctl_control_id = prm_codigo;
 
-                                IF (v_tipo = 'ITEM')
+                                IF existe = 0
                                 THEN
-                                    SELECT   COUNT (1)
-                                      INTO   existe
-                                      FROM   fis_alcance_item a
-                                     WHERE       a.alc_alcance_id = v_alcance
-                                             AND ali_num = 0
-                                             AND ali_lstope = 'U'
-                                             AND ali_numero_item = v_numero;
+                                    RETURN 'no se encuentra registrada en el control '
+                                           || v_reg_year
+                                           || '/'
+                                           || v_key_cuo
+                                           || '/C-'
+                                           || v_reg_serial
+                                           || ' - '
+                                           || prm_codigo;
+                                ELSE
+                                    SELECT   alc_alcance_id, alc_tipo_alcance
+                                      INTO   v_alcance, v_tipo
+                                      FROM   fis_alcance a
+                                     WHERE       alc_tipo_tramite = 'DUI'
+                                             AND alc_gestion = v_reg_year
+                                             AND alc_aduana = v_key_cuo
+                                             AND alc_numero = v_reg_serial
+                                             AND alc_num = 0
+                                             AND alc_lstope = 'U'
+                                             AND ctl_control_id = prm_codigo;
 
-                                    IF existe = 0
+                                    IF (v_tipo = 'ITEM')
                                     THEN
-                                        RETURN 'el numero de item '
-                                               || v_numero
-                                               || ', no fue registrado dentro del alcance de este control.';
+                                        SELECT   COUNT (1)
+                                          INTO   existe
+                                          FROM   fis_alcance_item a
+                                         WHERE   a.alc_alcance_id = v_alcance
+                                                 AND ali_num = 0
+                                                 AND ali_lstope = 'U'
+                                                 AND ali_numero_item =
+                                                        v_numero;
+
+                                        IF existe = 0
+                                        THEN
+                                            RETURN 'el numero de item '
+                                                   || v_numero
+                                                   || ', no fue registrado dentro del alcance de este control.';
+                                        ELSE
+                                            SELECT   COUNT (1)
+                                              INTO   existe
+                                              FROM   fis_resultados a
+                                             WHERE   a.alc_alcance_id =
+                                                         prm_idalcance
+                                                     AND a.res_numero_item =
+                                                            v_numero
+                                                     AND a.res_num = 0
+                                                     AND a.res_lstope = 'U';
+
+                                            IF existe = 0
+                                            THEN
+                                                INSERT INTO fis_resultados (res_dui,
+                                                                            res_numero_item,
+                                                                            res_partida,
+                                                                            res_fob_usd,
+                                                                            res_flete_usd,
+                                                                            res_seguro_usd,
+                                                                            res_otros_usd,
+                                                                            res_cif_usd,
+                                                                            res_cif_bob,
+                                                                            res_contrav,
+                                                                            res_ilicito,
+                                                                            res_observacion,
+                                                                            res_num,
+                                                                            res_lstope,
+                                                                            res_usuario,
+                                                                            res_fecsys,
+                                                                            key_year,
+                                                                            key_cuo,
+                                                                            key_dec,
+                                                                            key_nber,
+                                                                            res_contravorden,
+                                                                            alc_alcance_id)
+                                                  VALUES   (prm_dui,
+                                                            v_numero,
+                                                            DECODE (
+                                                                prm_partida,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_partida),
+                                                            DECODE (prm_fob,
+                                                                    '-1',
+                                                                    NULL,
+                                                                    prm_fob),
+                                                            DECODE (
+                                                                prm_flete,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_flete),
+                                                            DECODE (
+                                                                prm_seguro,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_seguro),
+                                                            DECODE (
+                                                                prm_otros,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_otros),
+                                                            DECODE (
+                                                                prm_cifusd,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_cifusd),
+                                                            DECODE (
+                                                                prm_cifbob,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_cifbob),
+                                                            DECODE (
+                                                                prm_contrav,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_contrav),
+                                                            prm_ilicito,
+                                                            prm_obs,
+                                                            0,
+                                                            'U',
+                                                            prm_usuario,
+                                                            SYSDATE,
+                                                            v_key_year,
+                                                            v_key_cuo,
+                                                            v_key_dec,
+                                                            v_key_nber,
+                                                            DECODE (
+                                                                prm_contravorden,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_contravorden),
+                                                            prm_idalcance);
+
+                                                COMMIT;
+                                                RETURN 'CORRECTO';
+                                            ELSE
+                                                SELECT   COUNT (1)
+                                                  INTO   existe
+                                                  FROM   fis_resultados a
+                                                 WHERE   a.alc_alcance_id =
+                                                             prm_idalcance
+                                                         AND a.res_numero_item =
+                                                                v_numero;
+
+                                                UPDATE   fis_resultados
+                                                   SET   res_num = existe
+                                                 WHERE   alc_alcance_id =
+                                                             prm_idalcance
+                                                         AND res_numero_item =
+                                                                v_numero
+                                                         AND res_num = 0;
+
+                                                INSERT INTO fis_resultados (res_dui,
+                                                                            res_numero_item,
+                                                                            res_partida,
+                                                                            res_fob_usd,
+                                                                            res_flete_usd,
+                                                                            res_seguro_usd,
+                                                                            res_otros_usd,
+                                                                            res_cif_usd,
+                                                                            res_cif_bob,
+                                                                            res_contrav,
+                                                                            res_ilicito,
+                                                                            res_observacion,
+                                                                            res_num,
+                                                                            res_lstope,
+                                                                            res_usuario,
+                                                                            res_fecsys,
+                                                                            key_year,
+                                                                            key_cuo,
+                                                                            key_dec,
+                                                                            key_nber,
+                                                                            res_contravorden,
+                                                                            alc_alcance_id)
+                                                  VALUES   (prm_dui,
+                                                            v_numero,
+                                                            DECODE (
+                                                                prm_partida,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_partida),
+                                                            DECODE (prm_fob,
+                                                                    '-1',
+                                                                    NULL,
+                                                                    prm_fob),
+                                                            DECODE (
+                                                                prm_flete,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_flete),
+                                                            DECODE (
+                                                                prm_seguro,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_seguro),
+                                                            DECODE (
+                                                                prm_otros,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_otros),
+                                                            DECODE (
+                                                                prm_cifusd,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_cifusd),
+                                                            DECODE (
+                                                                prm_cifbob,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_cifbob),
+                                                            DECODE (
+                                                                prm_contrav,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_contrav),
+                                                            prm_ilicito,
+                                                            prm_obs,
+                                                            0,
+                                                            'U',
+                                                            prm_usuario,
+                                                            SYSDATE,
+                                                            v_key_year,
+                                                            v_key_cuo,
+                                                            v_key_dec,
+                                                            v_key_nber,
+                                                            DECODE (
+                                                                prm_contravorden,
+                                                                '-1',
+                                                                NULL,
+                                                                prm_contravorden),
+                                                            prm_idalcance);
+
+                                                RETURN 'CORRECTO';
+                                            END IF;
+                                        END IF;
                                     ELSE
                                         SELECT   COUNT (1)
                                           INTO   existe
@@ -858,164 +1087,6 @@ IS
 
                                             RETURN 'CORRECTO';
                                         END IF;
-                                    END IF;
-                                ELSE
-                                    SELECT   COUNT (1)
-                                      INTO   existe
-                                      FROM   fis_resultados a
-                                     WHERE   a.alc_alcance_id = prm_idalcance
-                                             AND a.res_numero_item = v_numero
-                                             AND a.res_num = 0
-                                             AND a.res_lstope = 'U';
-
-                                    IF existe = 0
-                                    THEN
-                                        INSERT INTO fis_resultados (res_dui,
-                                                                    res_numero_item,
-                                                                    res_partida,
-                                                                    res_fob_usd,
-                                                                    res_flete_usd,
-                                                                    res_seguro_usd,
-                                                                    res_otros_usd,
-                                                                    res_cif_usd,
-                                                                    res_cif_bob,
-                                                                    res_contrav,
-                                                                    res_ilicito,
-                                                                    res_observacion,
-                                                                    res_num,
-                                                                    res_lstope,
-                                                                    res_usuario,
-                                                                    res_fecsys,
-                                                                    key_year,
-                                                                    key_cuo,
-                                                                    key_dec,
-                                                                    key_nber,
-                                                                    res_contravorden,
-                                                                    alc_alcance_id)
-                                          VALUES   (prm_dui,
-                                                    v_numero,
-                                                    DECODE (prm_partida,
-                                                            '-1', NULL,
-                                                            prm_partida),
-                                                    DECODE (prm_fob,
-                                                            '-1', NULL,
-                                                            prm_fob),
-                                                    DECODE (prm_flete,
-                                                            '-1', NULL,
-                                                            prm_flete),
-                                                    DECODE (prm_seguro,
-                                                            '-1', NULL,
-                                                            prm_seguro),
-                                                    DECODE (prm_otros,
-                                                            '-1', NULL,
-                                                            prm_otros),
-                                                    DECODE (prm_cifusd,
-                                                            '-1', NULL,
-                                                            prm_cifusd),
-                                                    DECODE (prm_cifbob,
-                                                            '-1', NULL,
-                                                            prm_cifbob),
-                                                    DECODE (prm_contrav,
-                                                            '-1', NULL,
-                                                            prm_contrav),
-                                                    prm_ilicito,
-                                                    prm_obs,
-                                                    0,
-                                                    'U',
-                                                    prm_usuario,
-                                                    SYSDATE,
-                                                    v_key_year,
-                                                    v_key_cuo,
-                                                    v_key_dec,
-                                                    v_key_nber,
-                                                    DECODE (prm_contravorden,
-                                                            '-1', NULL,
-                                                            prm_contravorden),
-                                                    prm_idalcance);
-
-                                        COMMIT;
-                                        RETURN 'CORRECTO';
-                                    ELSE
-                                        SELECT   COUNT (1)
-                                          INTO   existe
-                                          FROM   fis_resultados a
-                                         WHERE   a.alc_alcance_id =
-                                                     prm_idalcance
-                                                 AND a.res_numero_item =
-                                                        v_numero;
-
-                                        UPDATE   fis_resultados
-                                           SET   res_num = existe
-                                         WHERE   alc_alcance_id =
-                                                     prm_idalcance
-                                                 AND res_numero_item =
-                                                        v_numero
-                                                 AND res_num = 0;
-
-                                        INSERT INTO fis_resultados (res_dui,
-                                                                    res_numero_item,
-                                                                    res_partida,
-                                                                    res_fob_usd,
-                                                                    res_flete_usd,
-                                                                    res_seguro_usd,
-                                                                    res_otros_usd,
-                                                                    res_cif_usd,
-                                                                    res_cif_bob,
-                                                                    res_contrav,
-                                                                    res_ilicito,
-                                                                    res_observacion,
-                                                                    res_num,
-                                                                    res_lstope,
-                                                                    res_usuario,
-                                                                    res_fecsys,
-                                                                    key_year,
-                                                                    key_cuo,
-                                                                    key_dec,
-                                                                    key_nber,
-                                                                    res_contravorden,
-                                                                    alc_alcance_id)
-                                          VALUES   (prm_dui,
-                                                    v_numero,
-                                                    DECODE (prm_partida,
-                                                            '-1', NULL,
-                                                            prm_partida),
-                                                    DECODE (prm_fob,
-                                                            '-1', NULL,
-                                                            prm_fob),
-                                                    DECODE (prm_flete,
-                                                            '-1', NULL,
-                                                            prm_flete),
-                                                    DECODE (prm_seguro,
-                                                            '-1', NULL,
-                                                            prm_seguro),
-                                                    DECODE (prm_otros,
-                                                            '-1', NULL,
-                                                            prm_otros),
-                                                    DECODE (prm_cifusd,
-                                                            '-1', NULL,
-                                                            prm_cifusd),
-                                                    DECODE (prm_cifbob,
-                                                            '-1', NULL,
-                                                            prm_cifbob),
-                                                    DECODE (prm_contrav,
-                                                            '-1', NULL,
-                                                            prm_contrav),
-                                                    prm_ilicito,
-                                                    prm_obs,
-                                                    0,
-                                                    'U',
-                                                    prm_usuario,
-                                                    SYSDATE,
-                                                    v_key_year,
-                                                    v_key_cuo,
-                                                    v_key_dec,
-                                                    v_key_nber,
-                                                    DECODE (prm_contravorden,
-                                                            '-1', NULL,
-                                                            prm_contravorden),
-                                                    prm_idalcance);
-
-                                        RETURN 'CORRECTO';
                                     END IF;
                                 END IF;
                             END IF;

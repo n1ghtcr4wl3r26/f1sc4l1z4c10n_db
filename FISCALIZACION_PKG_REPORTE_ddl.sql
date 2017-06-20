@@ -5029,7 +5029,7 @@ IS
                  tbl;
 
         SELECT   SUM (cif)
-          INTO   vsancioncontrab
+          INTO   vsanciondefraud
           FROM   (SELECT   i.saditm_stat_val cif
                     FROM   fis_alcance a,
                            fis_resultados b,
@@ -5066,7 +5066,7 @@ IS
                            AND ret_ilicito = 'CONTRABANDO DELITO') tbl;
 
         SELECT   SUM (cif)
-          INTO   vsancioncontrab
+          INTO   vsanciondelito
           FROM   (SELECT   i.saditm_stat_val cif
                     FROM   fis_alcance a,
                            fis_resultados b,
