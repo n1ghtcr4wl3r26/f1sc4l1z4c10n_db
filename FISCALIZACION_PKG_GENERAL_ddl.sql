@@ -103,7 +103,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 19-jun.-2017 16:28:34 (QP5 v5.126) */
+/* Formatted on 27-jun.-2017 11:00:40 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -1382,42 +1382,29 @@ AS
     IS
         res    VARCHAR2 (50) := 'NOCORRECTO';
         cont   NUMBER (10);
+        tipo   VARCHAR (30);
+        codigo_amp VARCHAR (30);
     BEGIN
-        IF (   prm_opcion = 'NOTIFICACION'
-            OR prm_opcion = 'AMPLIACION'
-            OR prm_opcion = 'GENERACION'
-            OR prm_opcion = 'SUBIR'
-            OR prm_opcion = 'EXCEL')
+        SELECT   DECODE (a.ctl_cod_tipo,
+                         'POSTERIOR', 'ORDEN',
+                         'DIFERIDO', 'ORDEN',
+                         'AMPLIATORIA POSTERIOR', 'AMPLIATORIA',
+                         'AMPLIATORIA DIFERIDO', 'AMPLIATORIA',
+                         '-')
+          INTO   tipo
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+
+        IF tipo = 'ORDEN'
         THEN
-            SELECT   COUNT (1)
-              INTO   cont
-              FROM   fis_acceso a
-             WHERE   a.ctl_control_id = prm_codigo
-                     AND a.fis_codigo_fiscalizador = prm_usuario
-                     AND (a.fis_cargo = 'FISCALIZADOR'
-                          OR a.fis_cargo = 'FISCALIZADOR APOYO')
-                     AND a.fis_num = 0
-                     AND a.fis_lstope = 'U';
-
-            IF cont > 0
-            THEN
-                res := 'CORRECTO';
-            ELSE
-                res := 'NOCORRECTO';
-            END IF;
-        END IF;
-
-        IF (prm_opcion = 'CONCLUSION')
-        THEN
-            SELECT   COUNT (1)
-              INTO   cont
-              FROM   usuario.usu_rol a
-             WHERE       a.usucodusu = prm_usuario
-                     AND a.rol_cod = 'GNF_LEGAL'
-                     AND a.lst_ope = 'U'
-                     AND a.ult_ver = 0;
-
-            IF cont = 0
+            IF (   prm_opcion = 'NOTIFICACION'
+                OR prm_opcion = 'AMPLIACION'
+                OR prm_opcion = 'GENERACION'
+                OR prm_opcion = 'SUBIR'
+                OR prm_opcion = 'EXCEL')
             THEN
                 SELECT   COUNT (1)
                   INTO   cont
@@ -1435,92 +1422,219 @@ AS
                 ELSE
                     res := 'NOCORRECTO';
                 END IF;
-            ELSE
-                res := 'CORRECTO';
             END IF;
-        END IF;
 
-        IF (   prm_opcion = 'ALCANCE'
-            OR prm_opcion = 'ASIGNACION'
-            OR prm_opcion = 'REGISTRA')
-        THEN
-            SELECT   COUNT (1)
-              INTO   cont
-              FROM   usuario.usu_rol a
-             WHERE   a.usucodusu = prm_usuario
-                     AND (   a.rol_cod = 'GNF_JEFEUFR'
-                          OR a.rol_cod = 'GNF_SUPERVISORUFR'
-                          OR a.rol_cod = 'GNF_INVESTIGADORUFR')
-                     AND a.lst_ope = 'U'
-                     AND a.ult_ver = 0;
-
-            IF cont > 0
+            IF (prm_opcion = 'CONCLUSION')
             THEN
                 SELECT   COUNT (1)
                   INTO   cont
-                  FROM   fis_control a
-                 WHERE       a.ctl_control_id = prm_codigo
-                         AND a.ctl_num = 0
-                         AND a.ctl_lstope = 'U'
-                         AND a.ctl_cod_gerencia = prm_gerencia;
+                  FROM   usuario.usu_rol a
+                 WHERE       a.usucodusu = prm_usuario
+                         AND a.rol_cod = 'GNF_LEGAL'
+                         AND a.lst_ope = 'U'
+                         AND a.ult_ver = 0;
 
-                IF cont > 0
+                IF cont = 0
                 THEN
-                    res := 'CORRECTO';
+                    SELECT   COUNT (1)
+                      INTO   cont
+                      FROM   fis_acceso a
+                     WHERE   a.ctl_control_id = prm_codigo
+                             AND a.fis_codigo_fiscalizador = prm_usuario
+                             AND (a.fis_cargo = 'FISCALIZADOR'
+                                  OR a.fis_cargo = 'FISCALIZADOR APOYO')
+                             AND a.fis_num = 0
+                             AND a.fis_lstope = 'U';
+
+                    IF cont > 0
+                    THEN
+                        res := 'CORRECTO';
+                    ELSE
+                        res := 'NOCORRECTO';
+                    END IF;
                 ELSE
-                    res := 'NOGERENCIA';
+                    res := 'CORRECTO';
                 END IF;
-            ELSE
-                res := 'NOPERFIL';
             END IF;
-        END IF;
 
-        IF (prm_opcion = 'ANULACION' OR prm_opcion = 'REASIGNA')
-        THEN
-            SELECT   COUNT (1)
-              INTO   cont
-              FROM   usuario.usu_rol a
-             WHERE   a.usucodusu = prm_usuario
-                     AND (a.rol_cod = 'GNF_JEFEUFR'
-                          OR a.rol_cod = 'GNF_SUPERVISORUFR')
-                     AND a.lst_ope = 'U'
-                     AND a.ult_ver = 0;
-
-            IF cont > 0
+            IF (   prm_opcion = 'ALCANCE'
+                OR prm_opcion = 'ASIGNACION'
+                OR prm_opcion = 'REGISTRA')
             THEN
-                /*SELECT   COUNT (1)
-                  INTO   cont
-                  FROM   fis_acceso a
-                 WHERE   a.ctl_control_id = prm_codigo
-                         AND a.fis_usuario = prm_usuario
-                         AND (a.fis_cargo = 'JEFE'
-                              OR a.fis_cargo = 'SUPERVISOR')
-                         AND a.fis_num = 0
-                         AND a.fis_lstope = 'U';
-
-                IF cont > 0
-                THEN*/
                 SELECT   COUNT (1)
                   INTO   cont
-                  FROM   fis_control a
-                 WHERE       a.ctl_control_id = prm_codigo
-                         AND a.ctl_num = 0
-                         AND a.ctl_lstope = 'U'
-                         AND a.ctl_cod_gerencia = prm_gerencia;
+                  FROM   usuario.usu_rol a
+                 WHERE   a.usucodusu = prm_usuario
+                         AND (   a.rol_cod = 'GNF_JEFEUFR'
+                              OR a.rol_cod = 'GNF_SUPERVISORUFR'
+                              OR a.rol_cod = 'GNF_INVESTIGADORUFR')
+                         AND a.lst_ope = 'U'
+                         AND a.ult_ver = 0;
 
                 IF cont > 0
                 THEN
-                    res := 'CORRECTO';
+                    SELECT   COUNT (1)
+                      INTO   cont
+                      FROM   fis_control a
+                     WHERE       a.ctl_control_id = prm_codigo
+                             AND a.ctl_num = 0
+                             AND a.ctl_lstope = 'U'
+                             AND a.ctl_cod_gerencia = prm_gerencia;
+
+                    IF cont > 0
+                    THEN
+                        res := 'CORRECTO';
+                    ELSE
+                        res := 'NOGERENCIA';
+                    END IF;
                 ELSE
-                    res := 'NOGERENCIA';
+                    res := 'NOPERFIL';
                 END IF;
-            /*ELSE
-                res := 'NOASIGNADO';
-            END IF;*/
-            ELSE
-                res := 'NOPERFIL';
+            END IF;
+
+            IF (prm_opcion = 'ANULACION' OR prm_opcion = 'REASIGNA')
+            THEN
+                SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   usuario.usu_rol a
+                 WHERE   a.usucodusu = prm_usuario
+                         AND (a.rol_cod = 'GNF_JEFEUFR'
+                              OR a.rol_cod = 'GNF_SUPERVISORUFR')
+                         AND a.lst_ope = 'U'
+                         AND a.ult_ver = 0;
+
+                IF cont > 0
+                THEN
+                    /*SELECT   COUNT (1)
+                      INTO   cont
+                      FROM   fis_acceso a
+                     WHERE   a.ctl_control_id = prm_codigo
+                             AND a.fis_usuario = prm_usuario
+                             AND (a.fis_cargo = 'JEFE'
+                                  OR a.fis_cargo = 'SUPERVISOR')
+                             AND a.fis_num = 0
+                             AND a.fis_lstope = 'U';
+
+                    IF cont > 0
+                    THEN*/
+                    SELECT   COUNT (1)
+                      INTO   cont
+                      FROM   fis_control a
+                     WHERE       a.ctl_control_id = prm_codigo
+                             AND a.ctl_num = 0
+                             AND a.ctl_lstope = 'U'
+                             AND a.ctl_cod_gerencia = prm_gerencia;
+
+                    IF cont > 0
+                    THEN
+                        res := 'CORRECTO';
+                    ELSE
+                        res := 'NOGERENCIA';
+                    END IF;
+                /*ELSE
+                    res := 'NOASIGNADO';
+                END IF;*/
+                ELSE
+                    res := 'NOPERFIL';
+                END IF;
             END IF;
         END IF;
+
+
+        IF tipo = 'AMPLIATORIA'
+        THEN
+
+
+        SELECT ctl.ctl_control_id into codigo_amp
+  FROM fis_control amp, fis_control ctl
+  where amp.ctl_control_id = prm_codigo
+  and amp.ctl_num = 0
+  and amp.ctl_lstope = 'U'
+  and amp.ctl_cod_gestion = ctl.ctl_cod_gestion
+  and amp.ctl_amp_control = ctl.ctl_cod_tipo
+  and amp.ctl_cod_gerencia = ctl.ctl_cod_gerencia
+  and amp.ctl_cod_numero = ctl.ctl_cod_numero
+  and ctl.ctl_num = 0
+  and ctl.ctl_lstope = 'U';
+
+            IF (   prm_opcion = 'NOTIFICACION'
+                OR prm_opcion = 'AMPLIACION'
+                OR prm_opcion = 'GENERACION'
+                OR prm_opcion = 'SUBIR'
+                OR prm_opcion = 'EXCEL'
+                OR prm_opcion = 'REASIGNA'
+                OR prm_opcion = 'ALCANCE'
+                OR prm_opcion = 'ASIGNACION'
+                OR prm_opcion = 'REGISTRA')
+            THEN
+                res := 'NOAMPLIATORIA';
+            END IF;
+
+            IF (prm_opcion = 'CONCLUSION')
+            THEN
+                SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   usuario.usu_rol a
+                 WHERE       a.usucodusu = prm_usuario
+                         AND a.rol_cod = 'GNF_LEGAL'
+                         AND a.lst_ope = 'U'
+                         AND a.ult_ver = 0;
+
+                IF cont = 0
+                THEN
+                    SELECT   COUNT (1)
+                      INTO   cont
+                      FROM   fis_acceso a
+                     WHERE       a.ctl_control_id = codigo_amp
+                             AND a.fis_codigo_fiscalizador = prm_usuario
+                             AND a.fis_cargo = 'FISCALIZADOR'
+                             AND a.fis_num = 0
+                             AND a.fis_lstope = 'U';
+
+                    IF cont > 0
+                    THEN
+                        res := 'CORRECTO';
+                    ELSE
+                        res := 'NOCORRECTO';
+                    END IF;
+                ELSE
+                    res := 'CORRECTO';
+                END IF;
+            END IF;
+
+            IF (prm_opcion = 'ANULACION')
+            THEN
+                SELECT   COUNT (1)
+                  INTO   cont
+                  FROM   usuario.usu_rol a
+                 WHERE   a.usucodusu = prm_usuario
+                         AND (a.rol_cod = 'GNF_JEFEUFR'
+                              OR a.rol_cod = 'GNF_SUPERVISORUFR')
+                         AND a.lst_ope = 'U'
+                         AND a.ult_ver = 0;
+
+                IF cont > 0
+                THEN
+                    SELECT   COUNT (1)
+                      INTO   cont
+                      FROM   fis_control a
+                     WHERE       a.ctl_control_id = codigo_amp
+                             AND a.ctl_num = 0
+                             AND a.ctl_lstope = 'U'
+                             AND a.ctl_cod_gerencia = prm_gerencia;
+
+                    IF cont > 0
+                    THEN
+                        res := 'CORRECTO';
+                    ELSE
+                        res := 'NOGERENCIA';
+                    END IF;
+                ELSE
+                    res := 'NOPERFIL';
+                END IF;
+            END IF;
+        END IF;
+
 
 
         RETURN res;

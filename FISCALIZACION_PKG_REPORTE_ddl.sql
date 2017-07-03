@@ -95,7 +95,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_reporte
-/* Formatted on 19-jun.-2017 17:45:54 (QP5 v5.126) */
+/* Formatted on 6/30/2017 4:34:49 PM (QP5 v5.126) */
 IS
     FUNCTION devuelve_tributos (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -3614,7 +3614,10 @@ IS
                            2)
                            adeudo_totalufv,
                        --64
-                       t.tc_ufvhoy
+                       t.tc_ufvhoy,
+                       t.unum,
+                       t.anum,
+                       t.fecnot
                 FROM   (SELECT   iu.itm_nber itm,
                                  ia.saditm_hs_cod || ia.saditm_hsprec_cod
                                      nandina_ant,
@@ -3750,7 +3753,10 @@ IS
                                      NVL (icdu.saditm_tax_amount, 0)
                                      - NVL (icda.saditm_tax_amount, 0),
                                      u.sad_top_cod)
-                                     icd_dt
+                                     icd_dt,
+                                 u.sad_num unum,
+                                 a.sad_num anum,
+                                 n.not_fecha_notificacion fecnot
                           FROM   ops$asy.sad_gen u,
                                  ops$asy.sad_gen a,
                                  ops$asy.sad_itm iu,
@@ -4042,7 +4048,10 @@ IS
                                      NVL (icdu.saditm_tax_amount, 0)
                                      - NVL (icda.saditm_tax_amount, 0),
                                      u.sad_top_cod)
-                                     icd_dt
+                                     icd_dt,
+                                 u.sad_num unum,
+                                 a.sad_num anum,
+                                 n.not_fecha_notificacion fecnot
                           FROM   ops$asy.sad_gen u,
                                  ops$asy.sad_gen a,
                                  ops$asy.sad_itm iu,
@@ -4992,7 +5001,16 @@ IS
 
         SELECT   SUM (cif)
           INTO   vsancioncontrab
-          FROM   (SELECT   i.saditm_stat_val cif
+          FROM   (SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
                     FROM   fis_alcance a,
                            fis_resultados b,
                            ops$asy.sad_gen g,
@@ -5017,7 +5035,12 @@ IS
                            AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
                            AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   ret_cif_bob cif
+                  SELECT   ret_cif_bob
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (alc_fecha, 'UFV')
+                               cif
                     FROM   fis_alcance a, fis_resultados_tramite b
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
@@ -5030,7 +5053,16 @@ IS
 
         SELECT   SUM (cif)
           INTO   vsanciondefraud
-          FROM   (SELECT   i.saditm_stat_val cif
+          FROM   (SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
                     FROM   fis_alcance a,
                            fis_resultados b,
                            ops$asy.sad_gen g,
@@ -5055,7 +5087,12 @@ IS
                            AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
                            AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   ret_cif_bob cif
+                  SELECT   ret_cif_bob
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (alc_fecha, 'UFV')
+                               cif
                     FROM   fis_alcance a, fis_resultados_tramite b
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
@@ -5067,7 +5104,16 @@ IS
 
         SELECT   SUM (cif)
           INTO   vsanciondelito
-          FROM   (SELECT   i.saditm_stat_val cif
+          FROM   (SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
                     FROM   fis_alcance a,
                            fis_resultados b,
                            ops$asy.sad_gen g,
@@ -5092,7 +5138,12 @@ IS
                            AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
                            AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   ret_cif_bob cif
+                  SELECT   ret_cif_bob
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (alc_fecha, 'UFV')
+                               cif
                     FROM   fis_alcance a, fis_resultados_tramite b
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
