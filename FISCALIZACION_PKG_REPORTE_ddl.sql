@@ -5021,7 +5021,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.res_num = 0
                            AND b.res_lstope = 'U'
-                           AND b.res_ilicito = 'CONTRABANDO CONTRAVENCIONAL'
+                           AND b.res_ilicito = 'CC'
                            AND g.sad_num = 0
                            AND g.lst_ope = 'U'
                            AND i.sad_num = 0
@@ -5048,7 +5048,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.ret_num = 0
                            AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'CONTRABANDO CONTRAVENCIONAL')
+                           AND ret_ilicito = 'C')
                  tbl;
 
         SELECT   SUM (cif)
@@ -5073,7 +5073,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.res_num = 0
                            AND b.res_lstope = 'U'
-                           AND b.res_ilicito = 'CONTRABANDO DELITO'
+                           AND b.res_ilicito = 'CD'
                            AND g.sad_num = 0
                            AND g.lst_ope = 'U'
                            AND i.sad_num = 0
@@ -5100,7 +5100,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.ret_num = 0
                            AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'CONTRABANDO DELITO') tbl;
+                           AND ret_ilicito = 'CD') tbl;
 
         SELECT   SUM (cif)
           INTO   vsanciondelito
@@ -5124,7 +5124,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.res_num = 0
                            AND b.res_lstope = 'U'
-                           AND b.res_ilicito = 'OTROS DELITOS'
+                           AND b.res_ilicito = 'OD'
                            AND g.sad_num = 0
                            AND g.lst_ope = 'U'
                            AND i.sad_num = 0
@@ -5151,7 +5151,7 @@ IS
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.ret_num = 0
                            AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'OTROS DELITOS') tbl;
+                           AND ret_ilicito = 'OD') tbl;
 
 
         --Determinar las contravenciones

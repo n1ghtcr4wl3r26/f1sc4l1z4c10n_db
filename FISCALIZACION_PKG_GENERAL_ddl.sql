@@ -103,7 +103,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 27-jun.-2017 11:00:40 (QP5 v5.126) */
+/* Formatted on 7-jul.-2017 10:42:29 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -1380,10 +1380,10 @@ AS
                               prm_gerencia   IN VARCHAR2)
         RETURN VARCHAR2
     IS
-        res    VARCHAR2 (50) := 'NOCORRECTO';
-        cont   NUMBER (10);
-        tipo   VARCHAR (30);
-        codigo_amp VARCHAR (30);
+        res          VARCHAR2 (50) := 'NOCORRECTO';
+        cont         NUMBER (10);
+        tipo         VARCHAR (30);
+        codigo_amp   VARCHAR (30);
     BEGIN
         SELECT   DECODE (a.ctl_cod_tipo,
                          'POSTERIOR', 'ORDEN',
@@ -1543,19 +1543,18 @@ AS
 
         IF tipo = 'AMPLIATORIA'
         THEN
-
-
-        SELECT ctl.ctl_control_id into codigo_amp
-  FROM fis_control amp, fis_control ctl
-  where amp.ctl_control_id = prm_codigo
-  and amp.ctl_num = 0
-  and amp.ctl_lstope = 'U'
-  and amp.ctl_cod_gestion = ctl.ctl_cod_gestion
-  and amp.ctl_amp_control = ctl.ctl_cod_tipo
-  and amp.ctl_cod_gerencia = ctl.ctl_cod_gerencia
-  and amp.ctl_cod_numero = ctl.ctl_cod_numero
-  and ctl.ctl_num = 0
-  and ctl.ctl_lstope = 'U';
+            SELECT   ctl.ctl_control_id
+              INTO   codigo_amp
+              FROM   fis_control amp, fis_control ctl
+             WHERE       amp.ctl_control_id = prm_codigo
+                     AND amp.ctl_num = 0
+                     AND amp.ctl_lstope = 'U'
+                     AND amp.ctl_cod_gestion = ctl.ctl_cod_gestion
+                     AND amp.ctl_amp_control = ctl.ctl_cod_tipo
+                     AND amp.ctl_cod_gerencia = ctl.ctl_cod_gerencia
+                     AND amp.ctl_cod_numero = ctl.ctl_cod_numero
+                     AND ctl.ctl_num = 0
+                     AND ctl.ctl_lstope = 'U';
 
             IF (   prm_opcion = 'NOTIFICACION'
                 OR prm_opcion = 'AMPLIACION'
