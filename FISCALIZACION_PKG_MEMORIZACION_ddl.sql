@@ -1,6 +1,6 @@
 CREATE OR REPLACE 
 PACKAGE pkg_memorizacion
-/* Formatted on 4-abr.-2017 10:24:59 (QP5 v5.126) */
+/* Formatted on 17-jul.-2017 3:04:40 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
@@ -66,6 +66,14 @@ IS
                                  prm_tipo_etapa        VARCHAR2)
         RETURN VARCHAR2;
 
+    FUNCTION actualiza_alcance_tramite (prm_id         VARCHAR2,
+                                        prm_item       VARCHAR2,
+                                        prm_valor      VARCHAR2,
+                                        prm_origen     VARCHAR2,
+                                        prm_partida    VARCHAR2,
+                                        prm_otro       VARCHAR2,
+                                        prm_usuario    VARCHAR2)
+        RETURN VARCHAR2;
 
     FUNCTION verifica_alcance_item (prm_tipo       VARCHAR2,
                                     prm_gestion    VARCHAR2,
@@ -201,6 +209,11 @@ IS
                              prm_tipo      IN VARCHAR2)
         RETURN VARCHAR2;
 
+    FUNCTION devuelve_tramite_iditem (prm_alcance_id    IN     VARCHAR2,
+                                      prm_numero_item   IN     VARCHAR2,
+                                      ct                   OUT cursortype)
+        RETURN VARCHAR2;
+
     FUNCTION devuelve_tramites (prm_codigocontrol   IN     VARCHAR2,
                                 ct                     OUT cursortype)
         RETURN VARCHAR2;
@@ -326,6 +339,9 @@ IS
         RETURN VARCHAR2;
 
     FUNCTION borra_tramite_selecitem (prm_id VARCHAR2, prm_usuario VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION borra_tramite_todo (prm_codigo VARCHAR2, prm_usuario VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION numero_control_gen (p_gestion       VARCHAR2,
@@ -492,12 +508,34 @@ IS
                                         prm_appat           OUT VARCHAR2,
                                         prm_apmat           OUT VARCHAR2)
         RETURN VARCHAR2;
+
+    FUNCTION verifica_registro_recibos (prm_codigo      VARCHAR2,
+                                        prm_gerencia    VARCHAR2,
+                                        prm_usuario     VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION graba_recibo (prm_id         VARCHAR2,
+                           prm_gestion    VARCHAR2,
+                           prm_aduana     VARCHAR2,
+                           prm_numero     VARCHAR2,
+                           prm_tipo       VARCHAR2,
+                           prm_fecha      VARCHAR2,
+                           prm_importe    VARCHAR2,
+                           prm_usuario    VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION devuelve_recibos (prm_codigocontrol   IN     VARCHAR2,
+                                ct                     OUT cursortype)
+        RETURN VARCHAR2;
+
+    FUNCTION borra_recibo (prm_id VARCHAR2, prm_usuario VARCHAR2)
+        RETURN VARCHAR2;
 END;
 /
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_memorizacion
-/* Formatted on 2-may.-2017 18:30:55 (QP5 v5.126) */
+/* Formatted on 17-jul.-2017 12:38:18 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -1500,13 +1538,13 @@ AS
         END IF;
 
         --RETURN 'No se encuentra habilitado el registro de Controles Diferidos, los mismos deben realizarse en el sistema SICODIF';
-       /* IF     prm_riesgodelito IS NULL
-           AND prm_riesgosubval IS NULL
-           AND prm_riesgoclas IS NULL
-           AND prm_riesgocontrab IS NULL
-        THEN
-            RETURN 'Debe seleccionar por lo menos un riesgo identificado';
-        END IF;*/
+        /* IF     prm_riesgodelito IS NULL
+            AND prm_riesgosubval IS NULL
+            AND prm_riesgoclas IS NULL
+            AND prm_riesgocontrab IS NULL
+         THEN
+             RETURN 'Debe seleccionar por lo menos un riesgo identificado';
+         END IF;*/
 
         IF     prm_tribga IS NULL
            AND prm_tribiva IS NULL
@@ -2298,6 +2336,47 @@ AS
             RETURN 1;
     END numero_control_gen;
 
+    FUNCTION numero_control_rec (p_gestion VARCHAR2)
+        RETURN NUMBER
+    IS
+        v_numero   NUMBER := 1;
+        v_tipo     VARCHAR2 (3) := 'REC';
+    BEGIN
+            ---- inicio cambio
+            SELECT   app_numero + 1
+              INTO   v_numero
+              FROM   app_ser
+             WHERE       app_gestion = p_gestion
+                     AND app_gerencia IS NULL
+                     AND app_tipo = v_tipo
+        FOR UPDATE   ;
+
+           ---- fin cambio
+
+           UPDATE   app_ser
+              SET   app_numero = v_numero
+            WHERE       app_gestion = p_gestion
+                    AND app_gerencia IS NULL
+                    AND app_tipo = v_tipo
+        RETURNING   app_numero
+             INTO   v_numero;
+
+        IF sql%ROWCOUNT = 0
+        THEN
+            INSERT INTO app_ser (app_gestion, app_tipo, app_numero)
+              VALUES   (p_gestion, v_tipo, v_numero);
+        END IF;
+
+        RETURN v_numero;
+    EXCEPTION
+        WHEN NO_DATA_FOUND
+        THEN
+            INSERT INTO app_ser (app_gestion, app_tipo, app_numero)
+              VALUES   (p_gestion, v_tipo, v_numero);
+
+            RETURN 1;
+    END numero_control_rec;
+
     FUNCTION devuelve_duis (prm_fecini       IN     VARCHAR2,
                             prm_fecfin       IN     VARCHAR2,
                             prm_aduana       IN     VARCHAR2,
@@ -2363,7 +2442,8 @@ AS
                                                  prm_tipo,
                                                  gen.key_year,
                                                  gen.key_cuo,
-                                                 gen.sad_reg_nber), --14 vertifitem
+                                                 gen.sad_reg_nber),
+                                             --14 vertifitem
                                              '-' partida,
                                                 ex.sad_exp_zip
                                              || ':'
@@ -6519,6 +6599,195 @@ AS
         RETURN res;
     END;
 
+    FUNCTION devuelve_tramite_iditem (prm_alcance_id    IN     VARCHAR2,
+                                      prm_numero_item   IN     VARCHAR2,
+                                      ct                   OUT cursortype)
+        RETURN VARCHAR2
+    IS
+        res             VARCHAR2 (300) := 0;
+        v_codigo        VARCHAR2 (20);
+        v_tipocontrol   VARCHAR2 (30);
+        v_item          VARCHAR2 (30);
+    BEGIN
+        SELECT   SUBSTR (prm_alcance_id, 0, INSTR (prm_alcance_id, '-') - 1),
+                 SUBSTR (
+                     prm_alcance_id,
+                     INSTR (prm_alcance_id, '-') + 1,
+                     LENGTH (prm_alcance_id) - INSTR (prm_alcance_id, '-'))
+          INTO   v_codigo, v_item
+          FROM   DUAL;
+
+
+        OPEN ct FOR
+            SELECT   b.alc_alcance_id,
+                     b.alc_tipo_tramite,
+                        b.alc_gestion
+                     || '/'
+                     || b.alc_aduana
+                     || '/'
+                     || 'C-'
+                     || b.alc_numero
+                         tramite,
+                     b.alc_tipo_alcance,
+                     b.alc_tipo_etapa,
+                     c.ali_numero_item,
+                     DECODE (c.ali_obs_valor, 'x', 'X', ''),
+                     DECODE (c.ali_obs_origen, 'x', 'X', ''),
+                     DECODE (c.ali_obs_partida, 'x', 'X', ''),
+                     DECODE (c.ali_obs_otro, 'x', 'X', ''),
+                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy'),
+                     b.alc_alcance_id || '-' || c.ali_numero_item,
+                     a.ctl_control_id
+              FROM   fis_control a,
+                     fis_alcance b,
+                     fis_alcance_item c,
+                     ops$asy.sad_gen g
+             WHERE       a.ctl_control_id = b.ctl_control_id
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND (b.alc_tipo_alcance = 'ITEM'
+                          OR b.alc_tipo_alcance = 'DECLARACION')
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND c.ali_num = 0
+                     AND c.ali_lstope = 'U'
+                     AND c.alc_alcance_id = b.alc_alcance_id
+                     AND b.alc_gestion = g.sad_reg_year
+                     AND b.alc_aduana = g.key_cuo
+                     AND g.sad_reg_serial = 'C'
+                     AND b.alc_numero = g.sad_reg_nber
+                     AND g.sad_num = 0
+                     AND b.alc_alcance_id = v_codigo
+                     AND c.ali_numero_item = prm_numero_item
+            UNION
+            SELECT   b.alc_alcance_id,
+                     b.alc_tipo_tramite,
+                        b.alc_numero
+                     || '-'
+                     || b.alc_proveedor
+                     || '-'
+                     || pkg_general.devuelve_pais (b.alc_pais)
+                         tramite,
+                     b.alc_tipo_alcance,
+                     b.alc_tipo_etapa,
+                     c.ali_numero_item,
+                     DECODE (c.ali_obs_valor, 'x', 'X', ''),
+                     DECODE (c.ali_obs_origen, 'x', 'X', ''),
+                     DECODE (c.ali_obs_partida, 'x', 'X', ''),
+                     DECODE (c.ali_obs_otro, 'x', 'X', ''),
+                     TO_CHAR (b.alc_fecha, 'dd/mm/yyyy'),
+                     b.alc_alcance_id || '-' || c.ali_numero_item,
+                     a.ctl_control_id
+              FROM   fis_control a, fis_alcance b, fis_alcance_item c
+             WHERE       a.ctl_control_id = b.ctl_control_id
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.alc_tipo_alcance = 'TRAMITE'
+                     AND b.alc_tipo_tramite = 'FACTURA'
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND c.ali_num = 0
+                     AND c.ali_lstope = 'U'
+                     AND c.alc_alcance_id = b.alc_alcance_id
+                     AND b.alc_alcance_id = v_codigo
+                     AND c.ali_numero_item = prm_numero_item
+            UNION
+            SELECT   b.alc_alcance_id,
+                     b.alc_tipo_tramite,
+                        b.alc_gestion
+                     || '/'
+                     || b.alc_aduana
+                     || '/'
+                     || b.alc_numero
+                         tramite,
+                     b.alc_tipo_alcance,
+                     b.alc_tipo_etapa,
+                     c.ali_numero_item,
+                     DECODE (c.ali_obs_valor, 'x', 'X', ''),
+                     DECODE (c.ali_obs_origen, 'x', 'X', ''),
+                     DECODE (c.ali_obs_partida, 'x', 'X', ''),
+                     DECODE (c.ali_obs_otro, 'x', 'X', ''),
+                     TO_CHAR (b.alc_fecha, 'dd/mm/yyyy'),
+                     b.alc_alcance_id || '-' || c.ali_numero_item,
+                     a.ctl_control_id
+              FROM   fis_control a, fis_alcance b, fis_alcance_item c
+             WHERE       a.ctl_control_id = b.ctl_control_id
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.alc_tipo_alcance = 'MANIFIESTO'
+                     AND b.alc_tipo_tramite = 'MIC'
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND c.ali_num = 0
+                     AND c.ali_lstope = 'U'
+                     AND c.alc_alcance_id = b.alc_alcance_id
+                     AND b.alc_alcance_id = v_codigo
+                     AND c.ali_numero_item = prm_numero_item
+            UNION
+            SELECT   b.alc_alcance_id,
+                     b.alc_tipo_tramite,
+                     b.alc_gestion || '-' || b.alc_proveedor tramite,
+                     b.alc_tipo_alcance,
+                     b.alc_tipo_etapa,
+                     c.ali_numero_item,
+                     DECODE (c.ali_obs_valor, 'x', 'X', ''),
+                     DECODE (c.ali_obs_origen, 'x', 'X', ''),
+                     DECODE (c.ali_obs_partida, 'x', 'X', ''),
+                     DECODE (c.ali_obs_otro, 'x', 'X', ''),
+                     TO_CHAR (b.alc_fecha, 'dd/mm/yyyy'),
+                     b.alc_alcance_id || '-' || c.ali_numero_item,
+                     a.ctl_control_id
+              FROM   fis_control a, fis_alcance b, fis_alcance_item c
+             WHERE       a.ctl_control_id = b.ctl_control_id
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND c.ali_num = 0
+                     AND c.ali_lstope = 'U'
+                     AND c.alc_alcance_id = b.alc_alcance_id
+                     AND b.alc_tipo_alcance = 'TRAMITE'
+                     AND b.alc_tipo_tramite = 'TRANSFERENCIA'
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND b.alc_alcance_id = v_codigo
+                     AND c.ali_numero_item = prm_numero_item
+            UNION
+            SELECT   b.alc_alcance_id,
+                     b.alc_tipo_tramite,
+                        b.alc_gestion
+                     || '-'
+                     || b.alc_proveedor
+                     || '-'
+                     || b.alc_tipo_documento
+                         tramite,
+                     b.alc_tipo_alcance,
+                     b.alc_tipo_etapa,
+                     c.ali_numero_item,
+                     DECODE (c.ali_obs_valor, 'x', 'X', ''),
+                     DECODE (c.ali_obs_origen, 'x', 'X', ''),
+                     DECODE (c.ali_obs_partida, 'x', 'X', ''),
+                     DECODE (c.ali_obs_otro, 'x', 'X', ''),
+                     TO_CHAR (b.alc_fecha, 'dd/mm/yyyy'),
+                     b.alc_alcance_id || '-' || c.ali_numero_item,
+                     a.ctl_control_id
+              FROM   fis_control a, fis_alcance b, fis_alcance_item c
+             WHERE       a.ctl_control_id = b.ctl_control_id
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.alc_tipo_alcance = 'TRAMITE'
+                     AND b.alc_tipo_tramite = 'OTROS'
+                     AND b.alc_num = 0
+                     AND b.alc_lstope = 'U'
+                     AND c.ali_num = 0
+                     AND c.ali_lstope = 'U'
+                     AND c.alc_alcance_id = b.alc_alcance_id
+                     AND b.alc_alcance_id = v_codigo
+                     AND c.ali_numero_item = prm_numero_item
+            ORDER BY   2, 3;
+
+        RETURN res;
+    END;
+
+
     FUNCTION devuelve_tramites (prm_codigocontrol   IN     VARCHAR2,
                                 ct                     OUT cursortype)
         RETURN VARCHAR2
@@ -6709,6 +6978,9 @@ AS
         res             VARCHAR2 (300) := 0;
         v_codigo        VARCHAR2 (20);
         v_tipocontrol   VARCHAR2 (30);
+        v_tipoope       VARCHAR2 (20);
+        v_tipodoc       VARCHAR2 (20);
+        v_openum        VARCHAR2 (20);
     BEGIN
         SELECT   ctl_cod_tipo
           INTO   v_tipocontrol
@@ -6720,6 +6992,27 @@ AS
         IF v_tipocontrol = 'AMPLIATORIA DIFERIDO'
            OR v_tipocontrol = 'AMPLIATORIA POSTERIOR'
         THEN
+            SELECT   ctl_tipo_operador,
+                     ctl_tipo_doc_identidad,
+                     DECODE (ctl_tipo_doc_identidad,
+                             'NIT',
+                             ctl_nit,
+                             'CI',
+                             ctl_ci)
+              INTO   v_tipoope, v_tipodoc, v_openum
+              FROM   fis_control a
+             WHERE       a.ctl_control_id = prm_codigocontrol
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U';
+
+
+            SELECT   ctl_cod_tipo
+              INTO   v_tipocontrol
+              FROM   fis_control a
+             WHERE       a.ctl_control_id = prm_codigocontrol
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U';
+
             SELECT   c.ctl_control_id
               INTO   v_codigo
               FROM   fis_control a, fis_control c
@@ -6749,11 +7042,14 @@ AS
                        b.alc_tipo_alcance,
                        COUNT (ali_numero_item),
                        b.alc_tipo_etapa,
-                       DECODE (d.amp_alcanceamp_id, NULL, 1, 0)
+                       DECODE (d.amp_alcanceamp_id, NULL, 1, 0),
+                       s.sad_consignee,
+                       s.key_dec
                 FROM   fis_control a,
                        fis_alcance b,
                        fis_alcance_item c,
-                       fis_alcance_amp d
+                       fis_alcance_amp d,
+                       ops$asy.sad_gen s
                WHERE       a.ctl_control_id = b.ctl_control_id
                        AND a.ctl_num = 0
                        AND a.ctl_lstope = 'U'
@@ -6768,6 +7064,11 @@ AS
                        AND d.amp_lstope(+) = 'U'
                        AND d.ctl_control_id(+) = prm_codigocontrol
                        AND d.alc_alcance_id(+) = b.alc_alcance_id
+                       AND s.sad_reg_year = b.alc_gestion
+                       AND s.key_cuo = b.alc_aduana
+                       AND s.sad_reg_serial = 'C'
+                       AND s.sad_reg_nber = b.alc_numero
+                       AND s.sad_num = 0
             GROUP BY   b.alc_alcance_id,
                        b.alc_tipo_tramite,
                           b.alc_gestion
@@ -6778,7 +7079,9 @@ AS
                        || b.alc_numero,
                        b.alc_tipo_alcance,
                        b.alc_tipo_etapa,
-                       DECODE (d.amp_alcanceamp_id, NULL, 1, 0)
+                       DECODE (d.amp_alcanceamp_id, NULL, 1, 0),
+                       s.sad_consignee,
+                       s.key_dec
             UNION
             SELECT   b.alc_alcance_id,
                      b.alc_tipo_tramite,
@@ -6792,8 +7095,13 @@ AS
                      'DECLARACI&Oacute;N',
                      0,
                      b.alc_tipo_etapa,
-                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0)
-              FROM   fis_control a, fis_alcance b, fis_alcance_amp c
+                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0),
+                     s.sad_consignee,
+                     s.key_dec
+              FROM   fis_control a,
+                     fis_alcance b,
+                     fis_alcance_amp c,
+                     ops$asy.sad_gen s
              WHERE       a.ctl_control_id = b.ctl_control_id
                      AND a.ctl_num = 0
                      AND a.ctl_lstope = 'U'
@@ -6805,6 +7113,11 @@ AS
                      AND c.amp_lstope(+) = 'U'
                      AND c.ctl_control_id(+) = prm_codigocontrol
                      AND c.alc_alcance_id(+) = b.alc_alcance_id
+                     AND s.sad_reg_year = b.alc_gestion
+                     AND s.key_cuo = b.alc_aduana
+                     AND s.sad_reg_serial = 'C'
+                     AND s.sad_reg_nber = b.alc_numero
+                     AND s.sad_num = 0
             UNION
             SELECT   b.alc_alcance_id,
                      b.alc_tipo_tramite,
@@ -6819,7 +7132,9 @@ AS
                      b.alc_tipo_alcance,
                      0,
                      b.alc_tipo_etapa,
-                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0)
+                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0),
+                     '',
+                     ''
               FROM   fis_control a, fis_alcance b, fis_alcance_amp c
              WHERE       a.ctl_control_id = b.ctl_control_id
                      AND a.ctl_num = 0
@@ -6845,7 +7160,9 @@ AS
                      b.alc_tipo_alcance,
                      0,
                      b.alc_tipo_etapa,
-                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0)
+                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0),
+                     '',
+                     ''
               FROM   fis_control a, fis_alcance b, fis_alcance_amp c
              WHERE       a.ctl_control_id = b.ctl_control_id
                      AND a.ctl_num = 0
@@ -6871,7 +7188,9 @@ AS
                      b.alc_tipo_alcance,
                      0,
                      b.alc_tipo_etapa,
-                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0)
+                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0),
+                     '',
+                     ''
               FROM   fis_control a, fis_alcance b, fis_alcance_amp c
              WHERE       a.ctl_control_id = b.ctl_control_id
                      AND a.ctl_num = 0
@@ -6899,7 +7218,9 @@ AS
                      b.alc_tipo_alcance,
                      0,
                      b.alc_tipo_etapa,
-                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0)
+                     DECODE (c.amp_alcanceamp_id, NULL, 1, 0),
+                     '',
+                     ''
               FROM   fis_control a, fis_alcance b, fis_alcance_amp c
              WHERE       a.ctl_control_id = b.ctl_control_id
                      AND a.ctl_num = 0
@@ -6914,6 +7235,8 @@ AS
                      AND c.ctl_control_id(+) = prm_codigocontrol
                      AND c.alc_alcance_id(+) = b.alc_alcance_id
             ORDER BY   2, 3;
+
+
 
         RETURN res;
     END;
@@ -8323,7 +8646,8 @@ AS
                 v_item := SUBSTR (val, 0, INSTR (val, '-') - 1);
                 v_key_year :=
                     SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 0, 4);
-                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3);
+                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3)
+;
                 v_reg_nber := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 8);
 
                 SELECT   COUNT (1)
@@ -8480,7 +8804,8 @@ AS
                 v_item := SUBSTR (val, 0, INSTR (val, '-') - 1);
                 v_key_year :=
                     SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 0, 4);
-                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3);
+                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3)
+;
                 v_reg_nber := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 8);
 
                 SELECT   COUNT (1)
@@ -8637,7 +8962,8 @@ AS
                 v_item := SUBSTR (val, 0, INSTR (val, '-') - 1);
                 v_key_year :=
                     SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 0, 4);
-                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3);
+                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3)
+;
                 v_reg_nber := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 8);
 
                 SELECT   COUNT (1)
@@ -8794,7 +9120,8 @@ AS
                 v_item := SUBSTR (val, 0, INSTR (val, '-') - 1);
                 v_key_year :=
                     SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 0, 4);
-                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3);
+                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3)
+;
                 v_reg_nber := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 8);
 
                 SELECT   COUNT (1)
@@ -8994,7 +9321,8 @@ AS
                 v_item := SUBSTR (val, 0, INSTR (val, '-') - 1);
                 v_key_year :=
                     SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 0, 4);
-                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3);
+                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3)
+;
                 v_reg_nber := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 8);
 
                 SELECT   COUNT (1)
@@ -9238,7 +9566,8 @@ AS
                 v_item := SUBSTR (val, 0, INSTR (val, '-') - 1);
                 v_key_year :=
                     SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 0, 4);
-                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3);
+                v_key_cou := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 5, 3)
+;
                 v_reg_nber := SUBSTR (SUBSTR (val, INSTR (val, '-') + 1), 8);
 
                 SELECT   COUNT (1)
@@ -9630,7 +9959,8 @@ AS
         ELSE
             IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
             THEN
-                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
+                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida'
+;
             END IF;
 
             SELECT   COUNT (1)
@@ -9745,7 +10075,8 @@ AS
         ELSE
             IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
             THEN
-                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
+                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida'
+;
             END IF;
 
             SELECT   COUNT (1)
@@ -9824,6 +10155,97 @@ AS
 
             RETURN res;
         END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
+    FUNCTION actualiza_alcance_tramite (prm_id         VARCHAR2,
+                                        prm_item       VARCHAR2,
+                                        prm_valor      VARCHAR2,
+                                        prm_origen     VARCHAR2,
+                                        prm_partida    VARCHAR2,
+                                        prm_otro       VARCHAR2,
+                                        prm_usuario    VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res          VARCHAR2 (300) := 0;
+        v_gestion    VARCHAR2 (4);
+        v_numero     NUMBER;
+        val          VARCHAR2 (100);
+        cad          VARCHAR2 (30000);
+        v_key_year   VARCHAR2 (4);
+        v_key_cou    VARCHAR2 (3);
+        v_reg_nber   VARCHAR2 (10);
+        v_item       VARCHAR2 (10);
+        v_codigo     NUMBER (18, 0);
+        existe       NUMBER;
+        error_dui    VARCHAR2 (30000) := '';
+        total        NUMBER := 0;
+        grabadas     NUMBER := 0;
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_alcance_item b
+         WHERE       b.alc_alcance_id = prm_id
+                 AND b.ali_numero_item = prm_item
+                 AND b.ali_num = 0
+                 AND b.ali_lstope = 'U';
+
+        IF existe > 0
+        THEN
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_alcance_item b
+             WHERE   b.alc_alcance_id = prm_id
+                     AND b.ali_numero_item = prm_item;
+
+
+
+            UPDATE   fis_alcance_item
+               SET   ali_num = existe
+             WHERE       alc_alcance_id = prm_id
+                     AND ali_numero_item = prm_item
+                     AND ali_num = 0;
+
+            INSERT INTO fis_alcance_item a (a.alc_alcance_id,
+                                            a.ali_numero_item,
+                                            a.ali_obs_valor,
+                                            a.ali_obs_partida,
+                                            a.ali_obs_origen,
+                                            a.ali_num,
+                                            a.ali_lstope,
+                                            a.ali_usuario,
+                                            a.ali_fecsys,
+                                            a.ali_obs_otro,
+                                            a.ali_tipo_etapa)
+                SELECT   alc_alcance_id,
+                         ali_numero_item,
+                         DECODE (prm_valor, 'on', 'x', ''),
+                         DECODE (prm_partida, 'on', 'x', ''),
+                         DECODE (prm_origen, 'on', 'x', ''),
+                         0,
+                         'U',
+                         prm_usuario,
+                         SYSDATE,
+                         DECODE (prm_otro, 'on', 'x', ''),
+                         ali_tipo_etapa
+                  FROM   fis_alcance_item
+                 WHERE       alc_alcance_id = prm_id
+                         AND ali_numero_item = prm_item
+                         AND ali_num = existe
+                         AND ROWNUM = 1;
+
+            res :=
+                'CORRECTOSe actualizo&oacute; correctamente el tr&aacute;mite';
+        ELSE
+            res := 'El Tr&aacute;mite ya fue borrad&oacute; anteriormente';
+        END IF;
+
+        RETURN res;
     EXCEPTION
         WHEN OTHERS
         THEN
@@ -11605,6 +12027,150 @@ AS
         END IF;
     END;
 
+    FUNCTION borra_tramite_todo (prm_codigo VARCHAR2, prm_usuario VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res        VARCHAR2 (300) := 0;
+        existe     NUMBER;
+        v_codigo   VARCHAR2 (30);
+        v_item     VARCHAR2 (30);
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_alcance a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.alc_num = 0
+                 AND a.alc_lstope = 'U'
+                 AND a.alc_tipo_etapa = 'NORMAL';
+
+        IF existe > 0
+        THEN
+            FOR i IN (SELECT   a.alc_alcance_id
+                        FROM   fis_alcance a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND a.alc_num = 0
+                               AND a.alc_lstope = 'U'
+                               AND a.alc_tipo_etapa = 'NORMAL')
+            LOOP
+                SELECT   COUNT (1)
+                  INTO   existe
+                  FROM   fis_alcance b
+                 WHERE   b.alc_alcance_id = i.alc_alcance_id;
+
+                UPDATE   fis_alcance b
+                   SET   b.alc_num = existe
+                 WHERE   b.alc_alcance_id = i.alc_alcance_id
+                         AND b.alc_num = 0;
+
+                INSERT INTO fis_alcance
+                    SELECT   a.alc_alcance_id,
+                             a.alc_tipo_alcance,
+                             a.alc_tipo_tramite,
+                             a.alc_gestion,
+                             a.alc_aduana,
+                             a.alc_numero,
+                             a.alc_fecha,
+                             a.alc_proveedor,
+                             a.alc_pais,
+                             a.alc_tipo_documento,
+                             0,
+                             'D',
+                             prm_usuario,
+                             SYSDATE,
+                             a.ctl_control_id,
+                             a.alc_tipo_etapa
+                      FROM   fis_alcance a
+                     WHERE       a.alc_alcance_id = i.alc_alcance_id
+                             AND a.alc_num = existe
+                             AND ROWNUM = 1;
+            END LOOP;
+
+            COMMIT;
+            RETURN 'CORRECTOSe borr&oacute; correctamente el alcance del control';
+        ELSE
+            RETURN 'El control no tiene alcance registrado';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
+    FUNCTION borra_tramite_todo_amp (prm_codigo     VARCHAR2,
+                                     prm_usuario    VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res        VARCHAR2 (300) := 0;
+        existe     NUMBER;
+        v_codigo   VARCHAR2 (30);
+        v_item     VARCHAR2 (30);
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_alcance a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.alc_num = 0
+                 AND a.alc_lstope = 'U'
+                 AND a.alc_tipo_etapa = 'AMPLIATORIA';
+
+        IF existe > 0
+        THEN
+            FOR i IN (SELECT   a.alc_alcance_id
+                        FROM   fis_alcance a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND a.alc_num = 0
+                               AND a.alc_lstope = 'U'
+                               AND a.alc_tipo_etapa = 'AMPLIATORIA')
+            LOOP
+                SELECT   COUNT (1)
+                  INTO   existe
+                  FROM   fis_alcance b
+                 WHERE   b.alc_alcance_id = i.alc_alcance_id;
+
+                UPDATE   fis_alcance b
+                   SET   b.alc_num = existe
+                 WHERE   b.alc_alcance_id = i.alc_alcance_id
+                         AND b.alc_num = 0;
+
+                INSERT INTO fis_alcance
+                    SELECT   a.alc_alcance_id,
+                             a.alc_tipo_alcance,
+                             a.alc_tipo_tramite,
+                             a.alc_gestion,
+                             a.alc_aduana,
+                             a.alc_numero,
+                             a.alc_fecha,
+                             a.alc_proveedor,
+                             a.alc_pais,
+                             a.alc_tipo_documento,
+                             0,
+                             'D',
+                             prm_usuario,
+                             SYSDATE,
+                             a.ctl_control_id,
+                             a.alc_tipo_etapa
+                      FROM   fis_alcance a
+                     WHERE       a.alc_alcance_id = i.alc_alcance_id
+                             AND a.alc_num = existe
+                             AND ROWNUM = 1;
+            END LOOP;
+
+            COMMIT;
+            RETURN 'CORRECTOSe borr&oacute; correctamente el alcance del control';
+        ELSE
+            RETURN 'El control no tiene alcance registrado';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
+
     FUNCTION borra_tramite_selecamp (prm_id VARCHAR2, prm_usuario VARCHAR2)
         RETURN VARCHAR2
     IS
@@ -11861,7 +12427,9 @@ AS
         IF v_tipocontrol = 'AMPLIATORIA DIFERIDO'
            OR v_tipocontrol = 'AMPLIATORIA POSTERIOR'
         THEN
-            RETURN 'No se puede registrar alcance de una fiscalizaci'||chr(243)||'n ampliatoria';
+            RETURN    'No se puede registrar alcance de una fiscalizaci'
+                   || CHR (243)
+                   || 'n ampliatoria';
         END IF;
 
         RETURN 'CORRECTO';
@@ -13142,7 +13710,7 @@ AS
 
         IF existe = 0
         THEN
-            IF NOT prm_cargo = 'FISCALIZADOR APOYO'
+            IF NOT prm_cargo = 'FISCALIZADOR'
             THEN
                 SELECT   COUNT (1)
                   INTO   existe
@@ -13282,7 +13850,7 @@ AS
 
         IF existe = 0
         THEN
-            IF prm_cargo = 'JEFE'
+            IF prm_cargo = 'JEFE' OR prm_cargo = 'SUPERVISOR'
             THEN
                 SELECT   COUNT (1)
                   INTO   existe
@@ -13290,11 +13858,12 @@ AS
                  WHERE       a.ctl_control_id = prm_id
                          AND a.fis_num = 0
                          AND a.fis_lstope = 'U'
-                         AND a.fis_cargo = 'JEFE';
+                         AND a.fis_cargo = prm_cargo;
 
                 IF existe = 1
                 THEN
-                    RETURN 'Solo se puede registrar un funcionario como Jefe';
+                    RETURN 'Solo se puede registrar un funcionario como '
+                           || prm_cargo;
                 ELSE
                     v_gestion := TO_CHAR (SYSDATE, 'yyyy');
                     v_numero := numero_control_asig (v_gestion);
@@ -13373,6 +13942,40 @@ AS
         THEN
             RETURN 'El asignaci&oacute;n no existe';
         ELSE
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_acceso a, fis_notificacion b
+             WHERE       a.fis_acceso_id = prm_id
+                     AND a.fis_cargo = 'FISCALIZADOR'
+                     AND a.fis_num = 0
+                     AND a.fis_lstope = 'U'
+                     AND a.fis_codigo_fiscalizador = b.not_usuario
+                     AND b.not_num = 0
+                     AND b.not_lstope = 'U'
+                     AND a.ctl_control_id = b.ctl_control_id;
+
+            IF existe > 0
+            THEN
+                RETURN 'El Funcionario realiz&oacute; la operacion de Notificaci&oacute;n, no se puede eliminar la asignaci&oacute;n';
+            END IF;
+
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_acceso a, fis_conclusion b
+             WHERE       a.fis_acceso_id = prm_id
+                     AND a.fis_cargo = 'FISCALIZADOR'
+                     AND a.fis_num = 0
+                     AND a.fis_lstope = 'U'
+                     AND a.fis_codigo_fiscalizador = b.con_usuario
+                     AND b.con_num = 0
+                     AND b.con_lstope = 'U'
+                     AND a.ctl_control_id = b.ctl_control_id;
+
+            IF existe > 0
+            THEN
+                RETURN 'El Funcionario realiz&oacute; la operacion de Concluci&oacute;n, no se puede eliminar la asignaci&oacute;n';
+            END IF;
+
             SELECT   COUNT (1)
               INTO   existe
               FROM   fis_acceso b
@@ -13537,6 +14140,71 @@ AS
             RETURN 'ERROR'
                    || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
     END;
+
+    FUNCTION verifica_registro_recibos (prm_codigo      VARCHAR2,
+                                        prm_gerencia    VARCHAR2,
+                                        prm_usuario     VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res             VARCHAR2 (300) := 0;
+        v_gestion       VARCHAR2 (4);
+        v_numero        NUMBER;
+        val             VARCHAR2 (100);
+        cad             VARCHAR2 (30000);
+        v_key_year      VARCHAR2 (4);
+        v_key_cou       VARCHAR2 (3);
+        v_reg_nber      VARCHAR2 (10);
+        existe          NUMBER;
+        error_dui       VARCHAR2 (30000) := '';
+        total           NUMBER := 0;
+        grabadas        NUMBER := 0;
+        v_tipo          VARCHAR2 (15);
+        v_tipocontrol   VARCHAR2 (30);
+        v_gerusuario    VARCHAR2 (30);
+        v_gercontrol    VARCHAR2 (30);
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+        IF existe = 0
+        THEN
+            RETURN 'No existe el Control';
+        ELSE
+            res :=
+                pkg_general.verifica_usuariogerencia (prm_codigo,
+                                                      prm_usuario);
+
+            IF NOT res = 'CORRECTO'
+            THEN
+                RETURN res;
+            ELSE
+                SELECT   COUNT (1)
+                  INTO   existe
+                  FROM   fis_notificacion a
+                 WHERE       a.ctl_control_id = prm_codigo
+                         AND a.not_num = 0
+                         AND a.not_lstope = 'U';
+
+                IF existe > 0
+                THEN
+                    RETURN 'CORRECTO';
+                ELSE
+                    RETURN 'No se puede registrar recibos de pago porque el control no fue notificado';
+                END IF;
+            END IF;
+        END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
 
     FUNCTION anula_control (prm_codigo           VARCHAR2,
                             prm_gerencia         VARCHAR2,
@@ -15206,6 +15874,256 @@ AS
         END IF;
 
         RETURN res;
+    END;
+
+    FUNCTION graba_recibo (prm_id         VARCHAR2,
+                           prm_gestion    VARCHAR2,
+                           prm_aduana     VARCHAR2,
+                           prm_numero     VARCHAR2,
+                           prm_tipo       VARCHAR2,
+                           prm_fecha      VARCHAR2,
+                           prm_importe    VARCHAR2,
+                           prm_usuario    VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res                    VARCHAR2 (300) := 0;
+        v_gestion              VARCHAR2 (4);
+        v_numero               NUMBER;
+        val                    VARCHAR2 (100);
+        cad                    VARCHAR2 (30000);
+        v_key_year             VARCHAR2 (4);
+        v_key_cou              VARCHAR2 (3);
+        v_reg_nber             VARCHAR2 (10);
+        v_item                 VARCHAR2 (10);
+        v_codigo               NUMBER (18, 0);
+        existe                 NUMBER;
+        error_dui              VARCHAR2 (30000) := '';
+        total                  NUMBER := 0;
+        grabadas               NUMBER := 0;
+        v_fecha_recibo         DATE;
+        v_fecha_notificacion   DATE;
+        v_val_recibo           NUMBER (18);
+        v_val_registro         NUMBER (18);
+    BEGIN
+        IF TO_DATE (prm_fecha, 'dd/mm/yyyy') > TRUNC (SYSDATE)
+        THEN
+            RETURN 'La fecha no puede ser mayor a la actual';
+        ELSE
+            IF prm_gestion > TO_CHAR (SYSDATE, 'YYYY')
+            THEN
+                RETURN 'La Gesti&oacute;n no puede ser mayor a la actual, y debe ser una gesti&oacute;n valida';
+            END IF;
+
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_recibos
+             WHERE       rec_gestion = prm_gestion
+                     AND rec_aduana = prm_aduana
+                     AND rec_numero = prm_numero
+                     AND rec_tipo = prm_tipo
+                     AND rec_num = 0
+                     AND rec_lstope = 'U';
+
+            IF existe = 0
+            THEN
+                SELECT   COUNT (1)
+                  INTO   existe
+                  FROM   ops$asy.bo_sad_payment a
+                 WHERE       TO_CHAR (a.sad_rcpt_date, 'yyyy') = prm_gestion
+                         AND a.key_cuo = prm_aduana
+                         AND a.sad_rcpt_nber = prm_numero;
+
+                IF existe = 0
+                THEN
+                    RETURN 'EL recibo no existe';
+                ELSE
+                    SELECT   sad_rcpt_date
+                      INTO   v_fecha_recibo
+                      FROM   ops$asy.bo_sad_payment a
+                     WHERE   TO_CHAR (a.sad_rcpt_date, 'yyyy') = prm_gestion
+                             AND a.key_cuo = prm_aduana
+                             AND a.sad_rcpt_nber = prm_numero
+                             AND ROWNUM = 1;
+
+                    SELECT   a.not_fecha_notificacion
+                      INTO   v_fecha_notificacion
+                      FROM   fis_notificacion a
+                     WHERE       a.ctl_control_id = prm_id
+                             AND a.not_num = 0
+                             AND a.not_lstope = 'U';
+
+                    IF v_fecha_recibo < v_fecha_notificacion
+                    THEN
+                        RETURN 'EL recibo no puede ser registrado, porque la fecha de pago no puede ser inferior a la fecha de notificaci&oacute;n';
+                    ELSE
+                        SELECT   NVL (SUM (rec_importe), 0) + prm_importe
+                          INTO   v_val_registro
+                          FROM   fis_recibos a
+                         WHERE       rec_gestion = prm_gestion
+                                 AND rec_aduana = prm_aduana
+                                 AND rec_numero = prm_numero
+                                 AND rec_lstope = 'U'
+                                 AND rec_num = 0;
+
+                        SELECT   SUM (a.sad_pco_amount)
+                          INTO   v_val_recibo
+                          FROM   ops$asy.bo_sad_payment a
+                         WHERE   sad_rcpt_nber = prm_numero
+                                 AND TO_CHAR (sad_rcpt_date, 'yyyy') =
+                                        prm_gestion
+                                 AND key_cuo = prm_aduana;
+
+                        IF v_val_registro > v_val_recibo
+                        THEN
+                            RETURN 'La suma de los montos registrados es mayor al valor del recibo';
+                        ELSE
+
+                        IF prm_importe <= 0
+                        THEN
+                            RETURN 'El importe debe ser mayor a 0';
+                        ELSE
+                            v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+                            v_numero := numero_control_rec (v_gestion);
+
+                            INSERT INTO fis_recibos (rec_recibos_id,
+                                                     rec_gestion,
+                                                     rec_aduana,
+                                                     rec_numero,
+                                                     rec_tipo,
+                                                     rec_fecha,
+                                                     rec_importe,
+                                                     rec_num,
+                                                     rec_lstope,
+                                                     rec_usuario,
+                                                     rec_fecsys,
+                                                     ctl_control_id)
+                              VALUES   (v_gestion || TO_CHAR (v_numero),
+                                        prm_gestion,
+                                        prm_aduana,
+                                        prm_numero,
+                                        prm_tipo,
+                                        TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                        prm_importe,
+                                        0,
+                                        'U',
+                                        prm_usuario,
+                                        SYSDATE,
+                                        prm_id);
+
+                            COMMIT;
+                            res :=
+                                'CORRECTOSe grab&oacute; correctamente el recibo';
+                                 END IF;
+                        END IF;
+                    END IF;
+                END IF;
+            ELSE
+                res :=
+                    'Ya se encuentra registrado el recibo con el mismo tipo de pago';
+            END IF;
+
+            RETURN res;
+        END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
+    FUNCTION devuelve_recibos (prm_codigocontrol   IN     VARCHAR2,
+                               ct                     OUT cursortype)
+        RETURN VARCHAR2
+    IS
+        res             VARCHAR2 (300) := 0;
+        v_codigo        VARCHAR2 (20);
+        v_tipocontrol   VARCHAR2 (30);
+    BEGIN
+        SELECT   ctl_cod_tipo
+          INTO   v_tipocontrol
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_codigocontrol
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+        IF v_tipocontrol = 'DIFERIDO' OR v_tipocontrol = 'POSTERIOR'
+        THEN
+            OPEN ct FOR
+                  SELECT   a.rec_recibos_id,
+                           a.rec_gestion,
+                           a.rec_aduana,
+                           a.rec_numero,
+                           a.rec_tipo,
+                           TO_CHAR (a.rec_fecha, 'dd/mm/yyyy'),
+                           a.rec_importe,
+                           a.rec_num,
+                           a.rec_lstope,
+                           a.rec_usuario,
+                           a.rec_fecsys,
+                           a.ctl_control_id
+                    FROM   fis_recibos a
+                   WHERE       a.rec_num = 0
+                           AND a.rec_lstope = 'U'
+                           AND a.ctl_control_id = prm_codigocontrol
+                ORDER BY   2,
+                           3,
+                           4,
+                           5;
+
+            RETURN 'CORRECTO';
+        ELSE
+            RETURN 'No se puede registrar recibos de una Fiscalizaci&oacute;n Ampliatoria';
+        END IF;
+    END;
+
+    FUNCTION borra_recibo (prm_id VARCHAR2, prm_usuario VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res      VARCHAR2 (300) := 0;
+        existe   NUMBER;
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_recibos b
+         WHERE       b.rec_recibos_id = prm_id
+                 AND b.rec_num = 0
+                 AND b.rec_lstope = 'U';
+
+        IF existe = 0
+        THEN
+            RETURN 'EL RECIBO NO EXISTE';
+        ELSE
+            SELECT   COUNT (1)
+              INTO   existe
+              FROM   fis_recibos b
+             WHERE   b.rec_recibos_id = prm_id;
+
+            UPDATE   fis_recibos b
+               SET   b.rec_num = existe
+             WHERE   b.rec_recibos_id = prm_id AND b.rec_num = 0;
+
+            INSERT INTO fis_recibos
+                SELECT   a.rec_recibos_id,
+                         a.rec_gestion,
+                         a.rec_aduana,
+                         a.rec_numero,
+                         a.rec_tipo,
+                         a.rec_fecha,
+                         a.rec_importe,
+                         0,
+                         'D',
+                         prm_usuario,
+                         SYSDATE,
+                         a.ctl_control_id
+                  FROM   fis_recibos a
+                 WHERE       a.rec_recibos_id = prm_id
+                         AND a.rec_num = existe
+                         AND ROWNUM = 1;
+
+            COMMIT;
+            RETURN 'CORRECTOEl recibo se borr&oacute; correctamente';
+        END IF;
     END;
 END;
 /

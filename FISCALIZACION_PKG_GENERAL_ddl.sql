@@ -1,8 +1,14 @@
 CREATE OR REPLACE 
 PACKAGE pkg_general
-/* Formatted on 2-may.-2017 2:58:31 (QP5 v5.126) */
+/* Formatted on 18/07/2017 6:20:16 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
+
+    FUNCTION devuelve_estadocontrol (prm_codigo IN VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION nombrecompleto (prm_codigo IN VARCHAR2)
+        RETURN VARCHAR2;
 
     FUNCTION devuelve_fecha
         RETURN VARCHAR2;
@@ -38,6 +44,9 @@ IS
     FUNCTION lista_paises
         RETURN cursortype;
 
+    FUNCTION lista_gerencias (gerencia VARCHAR2)
+        RETURN cursortype;
+
     FUNCTION devuelve_datos_nit (prm_nit IN VARCHAR2)
         RETURN cursortype;
 
@@ -51,6 +60,12 @@ IS
         RETURN VARCHAR2;
 
     FUNCTION lista_fiscalizadores (gerencia VARCHAR)
+        RETURN cursortype;
+
+    FUNCTION lista_supervisores (gerencia VARCHAR)
+        RETURN cursortype;
+
+    FUNCTION lista_funcionarios (gerencia VARCHAR)
         RETURN cursortype;
 
     FUNCTION devuelve_codigo (gestion    IN VARCHAR2,
@@ -103,8 +118,137 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 7-jul.-2017 10:42:29 (QP5 v5.126) */
+/* Formatted on 18/07/2017 10:34:12 (QP5 v5.126) */
 AS
+    FUNCTION devuelve_estadocontrol (prm_codigo IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res      VARCHAR2 (50) := '';
+        existe   NUMBER;
+    BEGIN
+        SELECT   SUM (tbl.remitido)
+          INTO   existe
+          FROM   (SELECT   COUNT (1) remitido
+                    FROM   fis_con_viscargo a
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND cvc_num = 0
+                           AND cvc_lstope = 'U'
+                           AND NOT cvc_fecha_ci_remision IS NULL
+                  UNION
+                  SELECT   COUNT (1) remitido
+                    FROM   fis_con_actainter a
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND cai_num = 0
+                           AND cai_lstope = 'U'
+                           AND NOT cai_fecha_ci_remision IS NULL
+                  UNION
+                  SELECT   COUNT (1) remitido
+                    FROM   fis_con_autoinicial a
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND cas_num = 0
+                           AND cas_lstope = 'U'
+                           AND NOT cas_ci_remision_gr IS NULL
+                  UNION
+                  SELECT   COUNT (1) remitido
+                    FROM   fis_con_resadmin a
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.cra_num = 0
+                           AND a.cra_lstope = 'U'
+                           AND NOT a.cra_fecha_remision_set IS NULL) tbl;
+
+        IF existe > 0
+        THEN
+            res := 'REMITIDO';
+        ELSE
+            SELECT   SUM (tbl.remitido)
+              INTO   existe
+              FROM   (SELECT   COUNT (1) remitido
+                        FROM   fis_con_viscargo a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND cvc_num = 0
+                               AND cvc_lstope = 'U'
+                               AND NOT cvc_fecha_notificacion IS NULL
+                      UNION
+                      SELECT   COUNT (1) remitido
+                        FROM   fis_con_actainter a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND cai_num = 0
+                               AND cai_lstope = 'U'
+                               AND NOT cai_fecha_acta_interv IS NULL
+                      UNION
+                      SELECT   COUNT (1) remitido
+                        FROM   fis_con_autoinicial a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND cas_num = 0
+                               AND cas_lstope = 'U'
+                               AND NOT cas_fecha_notificacion IS NULL
+                      UNION
+                      SELECT   COUNT (1) remitido
+                        FROM   fis_con_resadmin a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND a.cra_num = 0
+                               AND a.cra_lstope = 'U'
+                               AND NOT a.cra_fecha_ra IS NULL
+                      UNION
+                      SELECT   COUNT (1) remitido
+                        FROM   fis_con_resdeter a
+                       WHERE       a.ctl_control_id = prm_codigo
+                               AND a.crd_num = 0
+                               AND a.crd_lstope = 'U'
+                               AND NOT a.crd_fecha_not_rd_final IS NULL) tbl;
+
+            IF existe > 0
+            THEN
+                res := 'CONCLUIDO';
+            ELSE
+                SELECT   COUNT (1)
+                  INTO   existe
+                  FROM   fis_notificacion a
+                 WHERE       a.ctl_control_id = prm_codigo
+                         AND a.not_num = 0
+                         AND a.not_lstope = 'U'
+                         AND NOT a.not_fecha_notificacion IS NULL;
+
+                IF existe > 0
+                THEN
+                    res := 'NOTIFICACION';
+                ELSE
+                    SELECT   COUNT (1)
+                      INTO   existe
+                      FROM   fis_estado a
+                     WHERE       a.ctl_control_id = prm_codigo
+                             AND a.est_num = 0
+                             AND a.est_lstope = 'U'
+                             AND a.est_estado = 'REGISTRADO';
+
+                    IF existe > 0
+                    THEN
+                        res := 'ASIGNACION';
+                    END IF;
+                END IF;
+            END IF;
+        END IF;
+
+        RETURN res;
+    END;
+
+    FUNCTION nombrecompleto (prm_codigo IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (50);
+    BEGIN
+        SELECT   u.usuapepat || ' ' || u.usuapemat || ' ' || u.usunombre
+          INTO   res
+          FROM   usuario.usuario u
+         WHERE   u.usucodusu = prm_codigo AND u.usu_num = 0;
+
+        RETURN res;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            RETURN '-';
+    END;
+
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
     IS
@@ -383,14 +527,6 @@ AS
                    WHERE   NOT cuo_cod IN ('ALL', 'CUO01') AND lst_ope = 'U'
                 ORDER BY   1;
         ELSE
-            /*OPEN ct FOR
-                  SELECT   a.cuo_cod, a.cuo_cod || ':' || a.cuo_nam cuo_nam
-                    FROM   ops$asy.uncuotab a, ops$asy.uncuoreg r
-                   WHERE       NOT a.cuo_cod IN ('ALL', 'CUO01')
-                           AND a.lst_ope = 'U'
-                           AND r.cuo_cod = a.cuo_cod
-                           AND r.reg_cod = gerencia
-                ORDER BY   1;*/
             OPEN ct FOR
                   SELECT   a.cuo_cod, a.cuo_cod || ':' || a.cuo_nam cuo_nam
                     FROM   ops$asy.uncuotab a
@@ -881,27 +1017,206 @@ AS
     IS
         ct   cursortype;
     BEGIN
-        OPEN ct FOR
-              SELECT   DISTINCT
-                       a.usucodusu AS codigo,
-                          NVL (a.usuapepat, ' ')
-                       || ' '
-                       || NVL (a.usuapemat, ' ')
-                       || ' '
-                       || a.usunombre
-                           AS nombre,
-                       a.usudocid || ' ' || a.usulugemi AS ci
-                FROM   usuario.usuario a, usuario.usu_rol b
-               WHERE       a.gercodger = gerencia
-                       AND a.lst_ope = 'U'
-                       AND a.usu_num = 0
-                       AND a.usucodusu = b.usucodusu
-                       AND (   b.rol_cod = 'GNF_FISCALIZADORUFR'
-                            OR b.rol_cod = 'GNF_JEFEUFR'
-                            OR b.rol_cod = 'GNF_SUPERVISORUFR')
-                       AND b.ult_ver = 0
-                       AND b.lst_ope = 'U'
-            ORDER BY   2;
+        IF gerencia = '%'
+        THEN
+            OPEN ct FOR
+                  SELECT   DISTINCT
+                           a.usucodusu AS codigo,
+                              NVL (a.usuapepat, ' ')
+                           || ' '
+                           || NVL (a.usuapemat, ' ')
+                           || ' '
+                           || a.usunombre
+                               AS nombre,
+                           a.usudocid || ' ' || a.usulugemi AS ci
+                    FROM   usuario.usuario a, usuario.usu_rol b
+                   WHERE       a.lst_ope = 'U'
+                           AND a.usu_num = 0
+                           AND a.usucodusu = b.usucodusu
+                           AND b.rol_cod = 'GNF_FISCALIZADORUFR'
+                           AND b.ult_ver = 0
+                           AND b.lst_ope = 'U'
+                ORDER BY   2;
+        ELSE
+            OPEN ct FOR
+                  SELECT   DISTINCT
+                           a.usucodusu AS codigo,
+                              NVL (a.usuapepat, ' ')
+                           || ' '
+                           || NVL (a.usuapemat, ' ')
+                           || ' '
+                           || a.usunombre
+                               AS nombre,
+                           a.usudocid || ' ' || a.usulugemi AS ci
+                    FROM   usuario.usuario a, usuario.usu_rol b
+                   WHERE       a.gercodger = gerencia
+                           AND a.lst_ope = 'U'
+                           AND a.usu_num = 0
+                           AND a.usucodusu = b.usucodusu
+                           AND b.rol_cod = 'GNF_FISCALIZADORUFR'
+                           AND b.ult_ver = 0
+                           AND b.lst_ope = 'U'
+                ORDER BY   2;
+        END IF;
+
+        RETURN ct;
+    END;
+
+    FUNCTION lista_supervisores (gerencia VARCHAR)
+        RETURN cursortype
+    IS
+        ct   cursortype;
+    BEGIN
+        IF gerencia = '%'
+        THEN
+            OPEN ct FOR
+                  SELECT   DISTINCT
+                           a.usucodusu AS codigo,
+                              NVL (a.usuapepat, ' ')
+                           || ' '
+                           || NVL (a.usuapemat, ' ')
+                           || ' '
+                           || a.usunombre
+                               AS nombre,
+                           a.usudocid || ' ' || a.usulugemi AS ci
+                    FROM   usuario.usuario a, usuario.usu_rol b
+                   WHERE       a.lst_ope = 'U'
+                           AND a.usu_num = 0
+                           AND a.usucodusu = b.usucodusu
+                           AND (b.rol_cod = 'GNF_JEFEUFR'
+                                OR b.rol_cod = 'GNF_SUPERVISORUFR')
+                           AND b.ult_ver = 0
+                           AND b.lst_ope = 'U'
+                ORDER BY   2;
+        ELSE
+            OPEN ct FOR
+                  SELECT   DISTINCT
+                           a.usucodusu AS codigo,
+                              NVL (a.usuapepat, ' ')
+                           || ' '
+                           || NVL (a.usuapemat, ' ')
+                           || ' '
+                           || a.usunombre
+                               AS nombre,
+                           a.usudocid || ' ' || a.usulugemi AS ci
+                    FROM   usuario.usuario a, usuario.usu_rol b
+                   WHERE       a.gercodger = gerencia
+                           AND a.lst_ope = 'U'
+                           AND a.usu_num = 0
+                           AND a.usucodusu = b.usucodusu
+                           AND (b.rol_cod = 'GNF_JEFEUFR'
+                                OR b.rol_cod = 'GNF_SUPERVISORUFR')
+                           AND b.ult_ver = 0
+                           AND b.lst_ope = 'U'
+                ORDER BY   2;
+        END IF;
+
+        RETURN ct;
+    END;
+
+    FUNCTION lista_funcionarios (gerencia VARCHAR)
+        RETURN cursortype
+    IS
+        ct   cursortype;
+    BEGIN
+        IF gerencia = '%'
+        THEN
+            OPEN ct FOR
+                  SELECT   DISTINCT
+                           a.usucodusu AS codigo,
+                              NVL (a.usuapepat, ' ')
+                           || ' '
+                           || NVL (a.usuapemat, ' ')
+                           || ' '
+                           || a.usunombre
+                               AS nombre,
+                           a.usudocid || ' ' || a.usulugemi AS ci
+                    FROM   usuario.usuario a, usuario.usu_rol b
+                   WHERE       a.lst_ope = 'U'
+                           AND a.usu_num = 0
+                           AND a.usucodusu = b.usucodusu
+                           AND (   b.rol_cod = 'GNF_FISCALIZADORUFR'
+                                OR b.rol_cod = 'GNF_JEFEUFR'
+                                OR b.rol_cod = 'GNF_SUPERVISORUFR')
+                           AND b.ult_ver = 0
+                           AND b.lst_ope = 'U'
+                ORDER BY   2;
+        ELSE
+            OPEN ct FOR
+                  SELECT   DISTINCT
+                           a.usucodusu AS codigo,
+                              NVL (a.usuapepat, ' ')
+                           || ' '
+                           || NVL (a.usuapemat, ' ')
+                           || ' '
+                           || a.usunombre
+                               AS nombre,
+                           a.usudocid || ' ' || a.usulugemi AS ci
+                    FROM   usuario.usuario a, usuario.usu_rol b
+                   WHERE       a.gercodger = gerencia
+                           AND a.lst_ope = 'U'
+                           AND a.usu_num = 0
+                           AND a.usucodusu = b.usucodusu
+                           AND (   b.rol_cod = 'GNF_FISCALIZADORUFR'
+                                OR b.rol_cod = 'GNF_JEFEUFR'
+                                OR b.rol_cod = 'GNF_SUPERVISORUFR')
+                           AND b.ult_ver = 0
+                           AND b.lst_ope = 'U'
+                ORDER BY   2;
+        END IF;
+
+        RETURN ct;
+    END;
+
+    FUNCTION lista_gerencias (gerencia VARCHAR2)
+        RETURN cursortype
+    IS
+        ct   cursortype;
+    BEGIN
+        IF gerencia = 'Todo'
+        THEN
+            OPEN ct FOR
+                SELECT   -1 id,
+                         '-' abrev,
+                         'Seleccione...' descripcion,
+                         '-' codigo,
+                         'U' lstope
+                  FROM   DUAL
+                UNION
+                SELECT   a.ger_id id,
+                         a.ger_codigo abrev,
+                         a.ger_descripcion descripcion,
+                         a.reg_cod codigo,
+                         a.reg_lstope lstope
+                  FROM   fis_gerencia a
+                 WHERE   reg_lstope = 'U'
+                ORDER BY   1;
+        ELSE
+            IF gerencia = 'GNF'
+            THEN
+                OPEN ct FOR
+                      SELECT   a.ger_id id,
+                               a.ger_codigo codigo2,
+                               a.ger_descripcion descripcion,
+                               a.reg_cod codigo,
+                               a.reg_lstope lstope
+                        FROM   fis_gerencia a
+                       WHERE   reg_lstope = 'U' AND a.ger_id > 0
+                    ORDER BY   1;
+            ELSE
+                OPEN ct FOR
+                      SELECT   a.ger_id id,
+                               a.ger_codigo codigo2,
+                               a.ger_descripcion descripcion,
+                               a.reg_cod codigo,
+                               a.reg_lstope lstope
+                        FROM   fis_gerencia a
+                       WHERE       reg_lstope = 'U'
+                               AND a.ger_id > 0
+                               AND a.reg_cod = gerencia
+                    ORDER BY   1;
+            END IF;
+        END IF;
 
         RETURN ct;
     END;
@@ -1404,7 +1719,8 @@ AS
                 OR prm_opcion = 'AMPLIACION'
                 OR prm_opcion = 'GENERACION'
                 OR prm_opcion = 'SUBIR'
-                OR prm_opcion = 'EXCEL')
+                OR prm_opcion = 'EXCEL'
+                OR prm_opcion = 'RECIBOS')
             THEN
                 SELECT   COUNT (1)
                   INTO   cont
@@ -1564,7 +1880,8 @@ AS
                 OR prm_opcion = 'REASIGNA'
                 OR prm_opcion = 'ALCANCE'
                 OR prm_opcion = 'ASIGNACION'
-                OR prm_opcion = 'REGISTRA')
+                OR prm_opcion = 'REGISTRA'
+                OR prm_opcion = 'RECIBOS')
             THEN
                 res := 'NOAMPLIATORIA';
             END IF;
