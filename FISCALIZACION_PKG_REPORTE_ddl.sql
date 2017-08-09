@@ -33,9 +33,22 @@ IS
                                            prm_fecha    IN VARCHAR2)
         RETURN cursortype;
 
-    FUNCTION dev_totales_multas_to (prm_codigo   IN VARCHAR2,
-                                           prm_fecha    IN VARCHAR2)
-        RETURN varchar2;
+    FUNCTION dev_totales_multas_dui (prm_codigo   IN VARCHAR2,
+                                     prm_fecha    IN VARCHAR2,
+                                     prm_key_year IN VARCHAR2,
+                                     prm_key_cuo  IN VARCHAR2,
+                                     prm_key_dec  IN VARCHAR2,
+                                     prm_key_nber IN VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION dev_totales_multas_item (prm_codigo     IN VARCHAR2,
+                                      prm_fecha      IN VARCHAR2,
+                                      prm_key_year   IN VARCHAR2,
+                                      prm_key_cuo    IN VARCHAR2,
+                                      prm_key_dec    IN VARCHAR2,
+                                      prm_key_nber   IN VARCHAR2,
+                                      prm_item       IN VARCHAR2)
+        RETURN VARCHAR2;
 
     FUNCTION dev_tributoomitidofecha (prm_codigo   IN VARCHAR2,
                                       prm_fecha    IN VARCHAR2)
@@ -198,7 +211,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_reporte
-/* Formatted on 08/08/2017 23:03:17 (QP5 v5.126) */
+/* Formatted on 9-ago.-2017 9:04:41 (QP5 v5.126) */
 IS
     FUNCTION devuelve_tributos (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -5306,8 +5319,12 @@ IS
         RETURN ct;
     END;
 
-    FUNCTION dev_totales_multas_to (prm_codigo   IN VARCHAR2,
-                                    prm_fecha    IN VARCHAR2)
+    FUNCTION dev_totales_multas_dui (prm_codigo     IN VARCHAR2,
+                                     prm_fecha      IN VARCHAR2,
+                                     prm_key_year   IN VARCHAR2,
+                                     prm_key_cuo    IN VARCHAR2,
+                                     prm_key_dec    IN VARCHAR2,
+                                     prm_key_nber   IN VARCHAR2)
         RETURN VARCHAR2
     IS
         res               VARCHAR2 (200);
@@ -5351,26 +5368,53 @@ IS
                            AND g.key_cuo = i.key_cuo
                            AND g.key_dec = i.key_dec
                            AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec = prm_key_dec
+                           AND g.key_nber = prm_key_nber
                            AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
                            AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
                            AND g.sad_reg_serial = 'C'
                            AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
                            AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   ret_cif_bob
+                  SELECT   i.saditm_stat_val
                            * pkg_reporte.tipocambio (
                                  TO_DATE (prm_fecha, 'dd/mm/yyyy'),
                                  'UFV')
-                           / pkg_reporte.tipocambio (alc_fecha, 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
                                cif
-                    FROM   fis_alcance a, fis_resultados_tramite b
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
                            AND a.alc_lstope = 'U'
                            AND a.alc_alcance_id = b.alc_alcance_id
-                           AND b.ret_num = 0
-                           AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'C') tbl;
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CC'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec IS NULL
+                           AND g.key_nber = prm_key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
 
         SELECT   SUM (cif)
           INTO   vsanciondefraud
@@ -5402,26 +5446,53 @@ IS
                            AND g.key_cuo = i.key_cuo
                            AND g.key_dec = i.key_dec
                            AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec = prm_key_dec
+                           AND g.key_nber = prm_key_nber
                            AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
                            AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
                            AND g.sad_reg_serial = 'C'
                            AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
                            AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   ret_cif_bob
+                  SELECT   i.saditm_stat_val
                            * pkg_reporte.tipocambio (
                                  TO_DATE (prm_fecha, 'dd/mm/yyyy'),
                                  'UFV')
-                           / pkg_reporte.tipocambio (alc_fecha, 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
                                cif
-                    FROM   fis_alcance a, fis_resultados_tramite b
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
                            AND a.alc_lstope = 'U'
                            AND a.alc_alcance_id = b.alc_alcance_id
-                           AND b.ret_num = 0
-                           AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'CD') tbl;
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CD'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec IS NULL
+                           AND g.key_nber = prm_key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
 
         SELECT   SUM (cif)
           INTO   vsanciondelito
@@ -5453,26 +5524,53 @@ IS
                            AND g.key_cuo = i.key_cuo
                            AND g.key_dec = i.key_dec
                            AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec = prm_key_dec
+                           AND g.key_nber = prm_key_nber
                            AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
                            AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
                            AND g.sad_reg_serial = 'C'
                            AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
                            AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   ret_cif_bob
+                  SELECT   i.saditm_stat_val
                            * pkg_reporte.tipocambio (
                                  TO_DATE (prm_fecha, 'dd/mm/yyyy'),
                                  'UFV')
-                           / pkg_reporte.tipocambio (alc_fecha, 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
                                cif
-                    FROM   fis_alcance a, fis_resultados_tramite b
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
                            AND a.alc_lstope = 'U'
                            AND a.alc_alcance_id = b.alc_alcance_id
-                           AND b.ret_num = 0
-                           AND b.ret_lstope = 'U'
-                           AND ret_ilicito = 'OD') tbl;
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'OD'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec IS NULL
+                           AND g.key_nber = prm_key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
 
 
         --Determinar las contravenciones
@@ -5488,27 +5586,433 @@ IS
                                  TO_DATE (prm_fecha, 'dd/mm/yyyy'),
                                  'UFV')
                                contravorden
-                    FROM   fis_alcance a, fis_resultados b
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
                            AND a.alc_lstope = 'U'
                            AND a.alc_alcance_id = b.alc_alcance_id
                            AND b.res_num = 0
                            AND b.res_lstope = 'U'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec = prm_key_dec
+                           AND g.key_nber = prm_key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
                   UNION
-                  SELECT   0 contravdui,
-                           SUM (NVL (b.ret_contravorden, 0))
+                  SELECT   SUM (b.res_contrav)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravdui,
+                           SUM (b.res_contravorden)
                            * pkg_reporte.tipocambio (
                                  TO_DATE (prm_fecha, 'dd/mm/yyyy'),
                                  'UFV')
                                contravorden
-                    FROM   fis_alcance a, fis_resultados_tramite b
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
                    WHERE       a.ctl_control_id = prm_codigo
                            AND a.alc_num = 0
                            AND a.alc_lstope = 'U'
                            AND a.alc_alcance_id = b.alc_alcance_id
-                           AND b.ret_num = 0
-                           AND b.ret_lstope = 'U') tbl;
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND g.key_year = prm_key_year
+                           AND g.key_cuo = prm_key_cuo
+                           AND g.key_dec IS NULL
+                           AND g.key_nber = prm_key_nber
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
+
+        SELECT      0
+                 || '&'
+                 || NVL (vcontravdui, 0)
+                 || '&'
+                 || NVL (vcontravorden, 0)
+                 || '&'
+                 || NVL (vsancioncontrab, 0)
+                 || '&'
+                 || NVL (vsanciondefraud, 0)
+                 || '&'
+                 || NVL (vsanciondelito, 0)
+                 || '&'
+                 || NVL (vcontravdui, 0)
+                 + NVL (vcontravorden, 0)
+                 + NVL (vsancioncontrab, 0)
+                 + NVL (vsanciondefraud, 0)
+                 + NVL (vsanciondelito, 0)
+                 || '&'
+          INTO   res
+          FROM   DUAL;
+
+        RETURN res;
+    END;
+
+    FUNCTION dev_totales_multas_item (prm_codigo     IN VARCHAR2,
+                                      prm_fecha      IN VARCHAR2,
+                                      prm_key_year   IN VARCHAR2,
+                                      prm_key_cuo    IN VARCHAR2,
+                                      prm_key_dec    IN VARCHAR2,
+                                      prm_key_nber   IN VARCHAR2,
+                                      prm_item       IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res               VARCHAR2 (200);
+        fecha_reporte     DATE;
+        vcontravdui       NUMBER (18, 2);
+        vcontravorden     NUMBER (18, 2);
+
+        vsancioncontrab   NUMBER (18, 2);
+        vsanciondefraud   NUMBER (18, 2);
+        vsanciondelito    NUMBER (18, 2);
+    BEGIN
+        --Determinar las sancones por ilicitos
+
+        SELECT   SUM (cif)
+          INTO   vsancioncontrab
+          FROM   (SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CC'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec = prm_key_dec
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CC'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec IS NULL
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
+
+        SELECT   SUM (cif)
+          INTO   vsanciondefraud
+          FROM   (SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CD'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec = prm_key_dec
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'CD'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec IS NULL
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
+
+        SELECT   SUM (cif)
+          INTO   vsanciondelito
+          FROM   (SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'OD'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec = prm_key_dec
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   i.saditm_stat_val
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                           / pkg_reporte.tipocambio (
+                                 pkg_reporte.fecha_vencimiento (
+                                     g.key_cuo,
+                                     TO_CHAR (g.sad_reg_date, 'dd/mm/yyyy')),
+                                 'UFV')
+                               cif
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND b.res_ilicito = 'OD'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec IS NULL
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
+
+
+        --Determinar las contravenciones
+        SELECT   ROUND (SUM (contravdui), 2), ROUND (SUM (contravorden), 2)
+          INTO   vcontravdui, vcontravorden
+          FROM   (SELECT   SUM (b.res_contrav)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravdui,
+                           SUM (b.res_contravorden)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravorden
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND g.key_dec = i.key_dec
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec = prm_key_dec
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item
+                  UNION
+                  SELECT   SUM (b.res_contrav)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravdui,
+                           SUM (b.res_contravorden)
+                           * pkg_reporte.tipocambio (
+                                 TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                 'UFV')
+                               contravorden
+                    FROM   fis_alcance a,
+                           fis_resultados b,
+                           ops$asy.sad_gen g,
+                           ops$asy.sad_itm i
+                   WHERE       a.ctl_control_id = prm_codigo
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                           AND a.alc_alcance_id = b.alc_alcance_id
+                           AND b.res_num = 0
+                           AND b.res_lstope = 'U'
+                           AND g.sad_num = 0
+                           AND g.lst_ope = 'U'
+                           AND i.sad_num = 0
+                           AND g.key_year = i.key_year
+                           AND g.key_cuo = i.key_cuo
+                           AND i.key_dec IS NULL
+                           AND g.key_nber = i.key_nber
+                           AND i.key_year = prm_key_year
+                           AND i.key_cuo = prm_key_cuo
+                           AND i.key_dec IS NULL
+                           AND i.key_nber = prm_key_nber
+                           AND i.itm_nber = prm_item
+                           AND g.sad_reg_year = SUBSTR (b.res_dui, 1, 4)
+                           AND g.key_cuo = SUBSTR (b.res_dui, 6, 3)
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = SUBSTR (b.res_dui, 12)
+                           AND i.itm_nber = b.res_numero_item) tbl;
 
         SELECT      0
                  || '&'
@@ -12262,12 +12766,91 @@ IS
                                * t.tc_ufvfecvenc,
                                2)
                                sancion,
-                           1 multacadui,
-                           2 multacaorden,
-                           3 multacc,
-                           4 multacd,
-                           5 otrod,
-                           6 total_det,
+                           --SUBSTR(tbl.multas,1,INSTR(tbl.ampli,'&')-1) sancion,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    1)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           2)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           1)
+                                                  - 1)
+                               multacadui,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    2)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           3)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           2)
+                                                  - 1)
+                               multacaorden,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    3)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           4)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           3)
+                                                  - 1)
+                               multacc,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    4)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           5)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           4)
+                                                  - 1)
+                               multadef,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    5)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           6)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           5)
+                                                  - 1)
+                               multacd,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    6)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           7)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           6)
+                                                  - 1)
+                               total_det,
                            t.fec_liq,
                            t.ufv_liq,
                            t.estado_control
@@ -12625,7 +13208,22 @@ IS
                                                  u.key_nber),
                                              'UFV'))
                                          ufv_liq,
-                                     e1.est_estado estado_control
+                                     e1.est_estado estado_control,
+                                     pkg_reporte.dev_totales_multas_dui (
+                                         f1.ctl_control_id,
+                                         TO_CHAR (
+                                             pkg_reporte.fecha_liquidacion (
+                                                 f1.ctl_control_id,
+                                                 u.key_year,
+                                                 u.key_cuo,
+                                                 u.key_dec,
+                                                 u.key_nber),
+                                             'dd/mm/yyyy'),
+                                         u.key_year,
+                                         u.key_cuo,
+                                         u.key_dec,
+                                         u.key_nber)
+                                         multas
                               FROM   ops$asy.sad_gen u,
                                      ops$asy.sad_gen a,
                                      ops$asy.sad_itm iu,
@@ -13196,7 +13794,22 @@ IS
                                                  u.key_nber),
                                              'UFV'))
                                          ufv_liq,
-                                     e1.est_estado estado_control
+                                     e1.est_estado estado_control,
+                                     pkg_reporte.dev_totales_multas_dui (
+                                         f1.ctl_control_id,
+                                         TO_CHAR (
+                                             pkg_reporte.fecha_liquidacion (
+                                                 f1.ctl_control_id,
+                                                 u.key_year,
+                                                 u.key_cuo,
+                                                 NULL,
+                                                 u.key_nber),
+                                             'dd/mm/yyyy'),
+                                         u.key_year,
+                                         u.key_cuo,
+                                         NULL,
+                                         u.key_nber)
+                                         multas
                               FROM   ops$asy.sad_gen u,
                                      ops$asy.sad_gen a,
                                      ops$asy.sad_itm iu,
@@ -13525,12 +14138,91 @@ IS
                                * t.tc_ufvfecvenc,
                                2)
                                sancion,
-                           1 multacadui,
-                           2 multacaorden,
-                           3 multacc,
-                           4 multacd,
-                           5 otrod,
-                           6 total_det,
+                           --SUBSTR(tbl.multas,1,INSTR(tbl.ampli,'&')-1) sancion,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    1)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           2)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           1)
+                                                  - 1)
+                               multacadui,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    2)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           3)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           2)
+                                                  - 1)
+                               multacaorden,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    3)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           4)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           3)
+                                                  - 1)
+                               multacc,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    4)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           5)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           4)
+                                                  - 1)
+                               multadef,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    5)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           6)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           5)
+                                                  - 1)
+                               multacd,
+                           SUBSTR (t.multas, INSTR (t.multas,
+                                                    '&',
+                                                    1,
+                                                    6)
+                                             + 1,   INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           7)
+                                                  - INSTR (t.multas,
+                                                           '&',
+                                                           1,
+                                                           6)
+                                                  - 1)
+                               total_det,
                            t.fec_liq,
                            t.ufv_liq,
                            t.estado_control
@@ -13888,7 +14580,22 @@ IS
                                                  u.key_nber),
                                              'UFV'))
                                          ufv_liq,
-                                     e1.est_estado estado_control
+                                     e1.est_estado estado_control,
+                                     pkg_reporte.dev_totales_multas_dui (
+                                         f1.ctl_control_id,
+                                         TO_CHAR (
+                                             pkg_reporte.fecha_liquidacion (
+                                                 f1.ctl_control_id,
+                                                 u.key_year,
+                                                 u.key_cuo,
+                                                 u.key_dec,
+                                                 u.key_nber),
+                                             'dd/mm/yyyy'),
+                                         u.key_year,
+                                         u.key_cuo,
+                                         u.key_dec,
+                                         u.key_nber)
+                                         multas
                               FROM   ops$asy.sad_gen u,
                                      ops$asy.sad_gen a,
                                      ops$asy.sad_itm iu,
@@ -14461,7 +15168,22 @@ IS
                                                  u.key_nber),
                                              'UFV'))
                                          ufv_liq,
-                                     e1.est_estado estado_control
+                                     e1.est_estado estado_control,
+                                     pkg_reporte.dev_totales_multas_dui (
+                                         f1.ctl_control_id,
+                                         TO_CHAR (
+                                             pkg_reporte.fecha_liquidacion (
+                                                 f1.ctl_control_id,
+                                                 u.key_year,
+                                                 u.key_cuo,
+                                                 NULL,
+                                                 u.key_nber),
+                                             'dd/mm/yyyy'),
+                                         u.key_year,
+                                         u.key_cuo,
+                                         NULL,
+                                         u.key_nber)
+                                         multas
                               FROM   ops$asy.sad_gen u,
                                      ops$asy.sad_gen a,
                                      ops$asy.sad_itm iu,
@@ -14817,12 +15539,91 @@ IS
                              * t.tc_ufvfecvenc,
                              2)
                              sancion,
-                         1 multacadui,
-                         2 multacaorden,
-                         3 multacc,
-                         4 multacd,
-                         5 otrod,
-                         6 total_det,
+                         --SUBSTR(tbl.multas,1,INSTR(tbl.ampli,'&')-1) sancion,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  1)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         2)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         1)
+                                                - 1)
+                             multacadui,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  2)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         3)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         2)
+                                                - 1)
+                             multacaorden,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  3)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         4)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         3)
+                                                - 1)
+                             multacc,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  4)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         5)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         4)
+                                                - 1)
+                             multadef,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  5)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         6)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         5)
+                                                - 1)
+                             multacd,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  6)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         7)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         6)
+                                                - 1)
+                             total_det,
                          t.fec_liq,
                          t.ufv_liq,
                          t.estado_control
@@ -15180,7 +15981,23 @@ IS
                                                u.key_nber),
                                            'UFV'))
                                        ufv_liq,
-                                   e1.est_estado estado_control
+                                   e1.est_estado estado_control,
+                                   pkg_reporte.dev_totales_multas_item (
+                                       f1.ctl_control_id,
+                                       TO_CHAR (
+                                           pkg_reporte.fecha_liquidacion (
+                                               f1.ctl_control_id,
+                                               u.key_year,
+                                               u.key_cuo,
+                                               u.key_dec,
+                                               u.key_nber),
+                                           'dd/mm/yyyy'),
+                                       u.key_year,
+                                       u.key_cuo,
+                                       u.key_dec,
+                                       u.key_nber,
+                                       iu.itm_nber)
+                                       multas
                             FROM   ops$asy.sad_gen u,
                                    ops$asy.sad_gen a,
                                    ops$asy.sad_itm iu,
@@ -15751,7 +16568,23 @@ IS
                                                u.key_nber),
                                            'UFV'))
                                        ufv_liq,
-                                   e1.est_estado estado_control
+                                   e1.est_estado estado_control,
+                                   pkg_reporte.dev_totales_multas_item (
+                                       f1.ctl_control_id,
+                                       TO_CHAR (
+                                           pkg_reporte.fecha_liquidacion (
+                                               f1.ctl_control_id,
+                                               u.key_year,
+                                               u.key_cuo,
+                                               NULL,
+                                               u.key_nber),
+                                           'dd/mm/yyyy'),
+                                       u.key_year,
+                                       u.key_cuo,
+                                       NULL,
+                                       u.key_nber,
+                                       iu.itm_nber)
+                                       multas
                             FROM   ops$asy.sad_gen u,
                                    ops$asy.sad_gen a,
                                    ops$asy.sad_itm iu,
@@ -16052,12 +16885,91 @@ IS
                              * t.tc_ufvfecvenc,
                              2)
                              sancion,
-                         1 multacadui,
-                         2 multacaorden,
-                         3 multacc,
-                         4 multacd,
-                         5 otrod,
-                         6 total_det,
+                         --SUBSTR(tbl.multas,1,INSTR(tbl.ampli,'&')-1) sancion,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  1)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         2)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         1)
+                                                - 1)
+                             multacadui,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  2)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         3)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         2)
+                                                - 1)
+                             multacaorden,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  3)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         4)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         3)
+                                                - 1)
+                             multacc,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  4)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         5)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         4)
+                                                - 1)
+                             multadef,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  5)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         6)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         5)
+                                                - 1)
+                             multacd,
+                         SUBSTR (t.multas, INSTR (t.multas,
+                                                  '&',
+                                                  1,
+                                                  6)
+                                           + 1,   INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         7)
+                                                - INSTR (t.multas,
+                                                         '&',
+                                                         1,
+                                                         6)
+                                                - 1)
+                             total_det,
                          t.fec_liq,
                          t.ufv_liq,
                          t.estado_control
@@ -16409,7 +17321,23 @@ IS
                                                u.key_nber),
                                            'UFV'))
                                        ufv_liq,
-                                   e1.est_estado estado_control
+                                   e1.est_estado estado_control,
+                                   pkg_reporte.dev_totales_multas_item (
+                                       f1.ctl_control_id,
+                                       TO_CHAR (
+                                           pkg_reporte.fecha_liquidacion (
+                                               f1.ctl_control_id,
+                                               u.key_year,
+                                               u.key_cuo,
+                                               u.key_dec,
+                                               u.key_nber),
+                                           'dd/mm/yyyy'),
+                                       u.key_year,
+                                       u.key_cuo,
+                                       u.key_dec,
+                                       u.key_nber,
+                                       iu.itm_nber)
+                                       multas
                             FROM   ops$asy.sad_gen u,
                                    ops$asy.sad_gen a,
                                    ops$asy.sad_itm iu,
@@ -16982,7 +17910,23 @@ IS
                                                u.key_nber),
                                            'UFV'))
                                        ufv_liq,
-                                   e1.est_estado estado_control
+                                   e1.est_estado estado_control,
+                                   pkg_reporte.dev_totales_multas_item (
+                                       f1.ctl_control_id,
+                                       TO_CHAR (
+                                           pkg_reporte.fecha_liquidacion (
+                                               f1.ctl_control_id,
+                                               u.key_year,
+                                               u.key_cuo,
+                                               NULL,
+                                               u.key_nber),
+                                           'dd/mm/yyyy'),
+                                       u.key_year,
+                                       u.key_cuo,
+                                       NULL,
+                                       u.key_nber,
+                                       iu.itm_nber)
+                                       multas
                             FROM   ops$asy.sad_gen u,
                                    ops$asy.sad_gen a,
                                    ops$asy.sad_itm iu,
