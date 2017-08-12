@@ -1,6 +1,6 @@
 CREATE OR REPLACE 
 PACKAGE pkg_reporte
-/* Formatted on 4-ago.-2017 11:18:20 (QP5 v5.126) */
+/* Formatted on 11-ago.-2017 15:12:09 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
@@ -33,12 +33,12 @@ IS
                                            prm_fecha    IN VARCHAR2)
         RETURN cursortype;
 
-    FUNCTION dev_totales_multas_dui (prm_codigo   IN VARCHAR2,
-                                     prm_fecha    IN VARCHAR2,
-                                     prm_key_year IN VARCHAR2,
-                                     prm_key_cuo  IN VARCHAR2,
-                                     prm_key_dec  IN VARCHAR2,
-                                     prm_key_nber IN VARCHAR2)
+    FUNCTION dev_totales_multas_dui (prm_codigo     IN VARCHAR2,
+                                     prm_fecha      IN VARCHAR2,
+                                     prm_key_year   IN VARCHAR2,
+                                     prm_key_cuo    IN VARCHAR2,
+                                     prm_key_dec    IN VARCHAR2,
+                                     prm_key_nber   IN VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION dev_totales_multas_item (prm_codigo     IN VARCHAR2,
@@ -156,10 +156,10 @@ IS
         RETURN cursortype;
 
     FUNCTION reporte_recuperacion_orden (prm_control    IN VARCHAR2,
-                                       prm_gerencia   IN VARCHAR2,
-                                       prm_fecini     IN VARCHAR2,
-                                       prm_fecfin     IN VARCHAR2,
-                                       prm_nit        IN VARCHAR2)
+                                         prm_gerencia   IN VARCHAR2,
+                                         prm_fecini     IN VARCHAR2,
+                                         prm_fecfin     IN VARCHAR2,
+                                         prm_nit        IN VARCHAR2)
         RETURN cursortype;
 
     FUNCTION devuelve_fiscalizadores_reg (prm_control IN VARCHAR2)
@@ -199,7 +199,7 @@ IS
                              prm_tax_cod       VARCHAR2)
         RETURN NUMBER;
 
-    FUNCTION tributo_pagado_orden (prm_control IN VARCHAR2,
+    FUNCTION tributo_pagado_orden (prm_control   IN VARCHAR2,
                                    prm_tax_cod   IN VARCHAR2)
         RETURN NUMBER;
 
@@ -211,7 +211,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_reporte
-/* Formatted on 9-ago.-2017 10:36:28 (QP5 v5.126) */
+/* Formatted on 11-ago.-2017 15:12:59 (QP5 v5.126) */
 IS
     FUNCTION devuelve_tributos (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -14082,7 +14082,8 @@ IS
                            t.tc_ufvfecvenc,
                            t.fec_liq,
                            t.ufv_liq,
-                           t.estado_control
+                           t.estado_control,
+                           t.multas
                 ORDER BY   1,
                            2,
                            3,
@@ -15462,7 +15463,8 @@ IS
                            t.tc_ufvfecvenc,
                            t.fec_liq,
                            t.ufv_liq,
-                           t.estado_control
+                           t.estado_control,
+                           t.multas
                 ORDER BY   1,
                            2,
                            3,
