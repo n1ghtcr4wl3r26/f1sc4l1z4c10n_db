@@ -4,6 +4,9 @@ PACKAGE pkg_general
 IS
     TYPE cursortype IS REF CURSOR;
 
+    FUNCTION valida_fecha (prm_fecha IN VARCHAR2)
+        RETURN NUMBER;
+
     FUNCTION devuelve_estadocontrol (prm_codigo IN VARCHAR2)
         RETURN VARCHAR2;
 
@@ -120,6 +123,21 @@ CREATE OR REPLACE
 PACKAGE BODY pkg_general
 /* Formatted on 18/07/2017 10:34:12 (QP5 v5.126) */
 AS
+    FUNCTION valida_fecha (prm_fecha IN VARCHAR2)
+        RETURN NUMBER
+    IS
+        res   NUMBER;
+        fec   DATE;
+    BEGIN
+        fec := TO_DATE (prm_fecha, 'dd/mm/yyyy');
+        RETURN 0;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 1;
+    END;
+
     FUNCTION devuelve_estadocontrol (prm_codigo IN VARCHAR2)
         RETURN VARCHAR2
     IS

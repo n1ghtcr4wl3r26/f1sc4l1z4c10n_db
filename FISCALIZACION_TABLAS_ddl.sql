@@ -64,6 +64,33 @@ CREATE TABLE fis_alcance
   MONITORING
 /
 
+CREATE INDEX fis_alcance_idxn ON fis_alcance
+  (
+    ctl_control_id                  ASC,
+    alc_alcance_id                  ASC,
+    alc_num                         ASC,
+    alc_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+CREATE UNIQUE INDEX fis_alcance_idx ON fis_alcance
+  (
+    ctl_control_id                  ASC,
+    alc_tipo_tramite                ASC,
+    alc_gestion                     ASC,
+    alc_aduana                      ASC,
+    alc_numero                      ASC,
+    alc_num                         ASC,
+    alc_lstope                      ASC,
+    alc_alcance_id                  ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
 ALTER TABLE fis_alcance
 ADD CONSTRAINT fis_alcance_pk UNIQUE (alc_alcance_id, alc_tipo_alcance, 
   alc_tipo_tramite, alc_gestion, alc_num, ctl_control_id)
@@ -266,6 +293,17 @@ CREATE TABLE fis_conclusion
   MONITORING
 /
 
+CREATE UNIQUE INDEX fis_conclusion_idx ON fis_conclusion
+  (
+    ctl_control_id                  ASC,
+    con_num                         ASC,
+    con_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
 CREATE TABLE fis_control
     (ctl_control_id                 NUMBER(18,0) NOT NULL,
     ctl_cod_gestion                VARCHAR2(4 BYTE),
@@ -280,7 +318,7 @@ CREATE TABLE fis_control
     ctl_tipo_doc_identidad         VARCHAR2(10 BYTE),
     ctl_nit                        NUMBER(18,0),
     ctl_razon_social               VARCHAR2(100 BYTE),
-    ctl_ci                         NUMBER(12,0),
+    ctl_ci                         VARCHAR2(30 BYTE),
     ctl_ci_exp                     VARCHAR2(5 BYTE),
     ctl_nombres                    VARCHAR2(30 BYTE),
     ctl_appat                      VARCHAR2(30 BYTE),
@@ -312,6 +350,19 @@ CREATE TABLE fis_control
   MONITORING
 /
 
+CREATE UNIQUE INDEX fis_control_idx ON fis_control
+  (
+    ctl_control_id                  ASC,
+    ctl_cod_tipo                    ASC,
+    ctl_cod_gerencia                ASC,
+    ctl_num                         ASC,
+    ctl_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
 CREATE TABLE fis_estado
     (ctl_control_id                 NUMBER(18,0) NOT NULL,
     est_estado                     VARCHAR2(30 BYTE),
@@ -323,6 +374,19 @@ CREATE TABLE fis_estado
   LOGGING
   MONITORING
 /
+
+CREATE UNIQUE INDEX fis_estado_idx ON fis_estado
+  (
+    ctl_control_id                  ASC,
+    est_estado                      ASC,
+    est_num                         ASC,
+    est_lstope                      ASC,
+    est_fecsys                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
 
 CREATE TABLE fis_fap
     (sad_reg_year                   VARCHAR2(4 BYTE),
@@ -405,6 +469,26 @@ CREATE TABLE fis_fiscalizador
   MONITORING
 /
 
+CREATE TABLE fis_gerencia
+    (ger_id                         NUMBER,
+    ger_codigo                     VARCHAR2(10 BYTE),
+    ger_descripcion                VARCHAR2(50 BYTE),
+    reg_cod                        VARCHAR2(2 BYTE),
+    reg_lstope                     VARCHAR2(2 BYTE))
+  NOPARALLEL
+  LOGGING
+/
+
+CREATE UNIQUE INDEX fis_gerencia_idx ON fis_gerencia
+  (
+    ger_codigo                      ASC,
+    reg_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
 CREATE TABLE fis_info_notificacion
     (inn_infnot_id                  NUMBER(18,0) NOT NULL,
     inn_plazo_conclusion           NUMBER(10,0),
@@ -439,6 +523,17 @@ CREATE TABLE fis_info_notificacion
   MONITORING
 /
 
+CREATE UNIQUE INDEX fis_info_notificacion_idx ON fis_info_notificacion
+  (
+    ctl_control_id                  ASC,
+    inn_num                         ASC,
+    inn_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
 CREATE TABLE fis_not_conclusion
     (ctl_control_id                 NUMBER(18,0) NOT NULL,
     ndc_fecha_notificacion         DATE,
@@ -464,6 +559,34 @@ CREATE TABLE fis_notificacion
   NOPARALLEL
   LOGGING
   MONITORING
+/
+
+CREATE UNIQUE INDEX fis_notificacion_idx ON fis_notificacion
+  (
+    ctl_control_id                  ASC,
+    not_num                         ASC,
+    not_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
+CREATE TABLE fis_recibos
+    (rec_recibos_id                 NUMBER(18,0),
+    rec_gestion                    VARCHAR2(10 BYTE),
+    rec_aduana                     VARCHAR2(10 BYTE),
+    rec_numero                     NUMBER(18,0),
+    rec_tipo                       VARCHAR2(100 BYTE),
+    rec_fecha                      DATE,
+    rec_importe                    NUMBER(18,2),
+    rec_num                        NUMBER(10,0),
+    rec_lstope                     VARCHAR2(1 BYTE),
+    rec_usuario                    VARCHAR2(30 BYTE),
+    rec_fecsys                     DATE,
+    ctl_control_id                 NUMBER(18,0))
+  NOPARALLEL
+  LOGGING
 /
 
 CREATE TABLE fis_resultados
@@ -494,6 +617,17 @@ CREATE TABLE fis_resultados
   MONITORING
 /
 
+CREATE INDEX fis_resultados_idxn ON fis_resultados
+  (
+    alc_alcance_id                  ASC,
+    res_num                         ASC,
+    res_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
+
 CREATE TABLE fis_resultados_tramite
     (alc_alcance_id                 NUMBER(18,0),
     ret_mercancia                  VARCHAR2(100 BYTE),
@@ -514,4 +648,15 @@ CREATE TABLE fis_resultados_tramite
   LOGGING
   MONITORING
 /
+
+CREATE INDEX fis_resultado_tram_idxn ON fis_resultados_tramite
+  (
+    alc_alcance_id                  ASC,
+    ret_num                         ASC,
+    ret_lstope                      ASC
+  )
+NOPARALLEL
+LOGGING
+/
+
 
