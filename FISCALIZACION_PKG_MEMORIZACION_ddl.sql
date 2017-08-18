@@ -535,7 +535,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_memorizacion
-/* Formatted on 17-jul.-2017 12:38:18 (QP5 v5.126) */
+/* Formatted on 17-ago.-2017 21:15:24 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -13084,23 +13084,24 @@ AS
                                prm_riesgocontrab          IN VARCHAR2)
         RETURN VARCHAR2
     IS
-        res             VARCHAR2 (300) := 0;
-        v_gestion       VARCHAR2 (4);
-        v_numero        NUMBER;
-        v_numeroinfo    NUMBER;
-        v_numeroamp     VARCHAR2 (15);
-        val             VARCHAR2 (100);
-        cad             VARCHAR2 (30000);
-        v_key_year      VARCHAR2 (4);
-        v_key_cou       VARCHAR2 (3);
-        v_reg_nber      VARCHAR2 (10);
-        existe          NUMBER;
-        error_dui       VARCHAR2 (30000) := '';
-        total           NUMBER := 0;
-        grabadas        NUMBER := 0;
-        v_tipo          VARCHAR2 (30);
-        v_tipocontrol   VARCHAR2 (30);
-        v_codigofisca   VARCHAR2 (100);
+        res              VARCHAR2 (300) := 0;
+        v_gestion        VARCHAR2 (4);
+        v_numero         NUMBER;
+        v_numeroinfo     NUMBER;
+        v_numeroamp      VARCHAR2 (15);
+        val              VARCHAR2 (100);
+        cad              VARCHAR2 (30000);
+        v_key_year       VARCHAR2 (4);
+        v_key_cou        VARCHAR2 (3);
+        v_reg_nber       VARCHAR2 (10);
+        existe           NUMBER;
+        error_dui        VARCHAR2 (30000) := '';
+        total            NUMBER := 0;
+        grabadas         NUMBER := 0;
+        v_tipo           VARCHAR2 (30);
+        v_tipocontrol    VARCHAR2 (30);
+        v_codigofisca    VARCHAR2 (100);
+        v_fiscalizador   VARCHAR2 (30);
     BEGIN
         IF     prm_tribga IS NULL
            AND prm_tribiva IS NULL
@@ -13678,6 +13679,43 @@ AS
                 res :=
                     'CORRECTOSe registr&oacute; correctamente el Control '
                     || v_codigofisca;
+
+
+                /*  ACTUALIZAR EL ESTADO DE FICHA INFORMATIVA EN EL SISTEMA MIRA  */
+                IF v_tipocontrol = 'POSTERIOR' OR v_tipocontrol = 'DIFERIDO'
+                THEN
+                    SELECT   f.fis_codigo_fiscalizador
+                      INTO   v_fiscalizador
+                      FROM   fis_fiscalizador f
+                     WHERE       f.ctl_control_id = 201740
+                             AND f.fis_num = 0
+                             AND f.fis_cargo = 'FISCALIZADOR'
+                             AND f.fis_lstope = 'U'
+                             AND ROWNUM = 1;
+
+
+                    FOR i
+                    IN (SELECT   a.alc_gestion, a.alc_aduana, a.alc_numero
+                          FROM   fis_alcance a
+                         WHERE       a.ctl_control_id = prm_codigo
+                                 AND a.alc_num = 0
+                                 AND a.alc_lstope = 'U'
+                                 AND a.alc_tipo_tramite = 'DUI')
+                    LOOP
+                        mira.pkg_fisca.graba_mira_fis (
+                            i.alc_gestion,
+                            i.alc_aduana,
+                            i.alc_numero,
+                            v_tipocontrol,
+                            v_fiscalizador,
+                            'REGISTRADO POR FISAP',
+                            prm_usuario);
+                    END LOOP;
+                END IF;
+
+                /*  *****************   */
+                COMMIT;
+
                 RETURN res;
             END IF;
         END IF;
@@ -15977,43 +16015,42 @@ AS
                         THEN
                             RETURN 'La suma de los montos registrados es mayor al valor del recibo';
                         ELSE
+                            IF prm_importe <= 0
+                            THEN
+                                RETURN 'El importe debe ser mayor a 0';
+                            ELSE
+                                v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+                                v_numero := numero_control_rec (v_gestion);
 
-                        IF prm_importe <= 0
-                        THEN
-                            RETURN 'El importe debe ser mayor a 0';
-                        ELSE
-                            v_gestion := TO_CHAR (SYSDATE, 'yyyy');
-                            v_numero := numero_control_rec (v_gestion);
+                                INSERT INTO fis_recibos (rec_recibos_id,
+                                                         rec_gestion,
+                                                         rec_aduana,
+                                                         rec_numero,
+                                                         rec_tipo,
+                                                         rec_fecha,
+                                                         rec_importe,
+                                                         rec_num,
+                                                         rec_lstope,
+                                                         rec_usuario,
+                                                         rec_fecsys,
+                                                         ctl_control_id)
+                                  VALUES   (v_gestion || TO_CHAR (v_numero),
+                                            prm_gestion,
+                                            prm_aduana,
+                                            prm_numero,
+                                            prm_tipo,
+                                            TO_DATE (prm_fecha, 'dd/mm/yyyy'),
+                                            prm_importe,
+                                            0,
+                                            'U',
+                                            prm_usuario,
+                                            SYSDATE,
+                                            prm_id);
 
-                            INSERT INTO fis_recibos (rec_recibos_id,
-                                                     rec_gestion,
-                                                     rec_aduana,
-                                                     rec_numero,
-                                                     rec_tipo,
-                                                     rec_fecha,
-                                                     rec_importe,
-                                                     rec_num,
-                                                     rec_lstope,
-                                                     rec_usuario,
-                                                     rec_fecsys,
-                                                     ctl_control_id)
-                              VALUES   (v_gestion || TO_CHAR (v_numero),
-                                        prm_gestion,
-                                        prm_aduana,
-                                        prm_numero,
-                                        prm_tipo,
-                                        TO_DATE (prm_fecha, 'dd/mm/yyyy'),
-                                        prm_importe,
-                                        0,
-                                        'U',
-                                        prm_usuario,
-                                        SYSDATE,
-                                        prm_id);
-
-                            COMMIT;
-                            res :=
-                                'CORRECTOSe grab&oacute; correctamente el recibo';
-                                 END IF;
+                                COMMIT;
+                                res :=
+                                    'CORRECTOSe grab&oacute; correctamente el recibo';
+                            END IF;
                         END IF;
                     END IF;
                 END IF;
