@@ -344,6 +344,10 @@ IS
     FUNCTION borra_tramite_todo (prm_codigo VARCHAR2, prm_usuario VARCHAR2)
         RETURN VARCHAR2;
 
+    FUNCTION borra_tramite_todo_amp (prm_codigo     VARCHAR2,
+                                     prm_usuario    VARCHAR2)
+        RETURN VARCHAR2;
+
     FUNCTION numero_control_gen (p_gestion       VARCHAR2,
                                  prm_tipo        VARCHAR2,
                                  prm_gerencia    VARCHAR2)
@@ -530,12 +534,18 @@ IS
 
     FUNCTION borra_recibo (prm_id VARCHAR2, prm_usuario VARCHAR2)
         RETURN VARCHAR2;
+
+    PROCEDURE graba_ficha_mira (prm_gestion    VARCHAR2,
+                                prm_aduana     VARCHAR2,
+                                prm_numero     VARCHAR2,
+                                prm_codigo     VARCHAR2,
+                                prm_usuario    VARCHAR2);
 END;
 /
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_memorizacion
-/* Formatted on 17-ago.-2017 21:15:24 (QP5 v5.126) */
+/* Formatted on 18-ago.-2017 19:43:20 (QP5 v5.126) */
 AS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -964,6 +974,18 @@ AS
                                             SYSDATE,
                                             prm_id,
                                             prm_tipo_etapa);
+
+                                /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                                IF prm_tipo_etapa = 'AMPLIATORIA'
+                                THEN
+                                    graba_ficha_mira (prm_gestion,
+                                                      prm_aduana,
+                                                      prm_numero,
+                                                      prm_id,
+                                                      prm_usuario);
+                                END IF;
+
+                                /*  ********    */
 
                                 INSERT INTO fis_alcance_item (alc_alcance_id,
                                                               ali_numero_item,
@@ -8438,6 +8460,18 @@ AS
                             SYSDATE,
                             prm_id,
                             prm_tipo_etapa);
+
+                /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                IF prm_tipo_etapa = 'AMPLIATORIA'
+                THEN
+                    graba_ficha_mira (SUBSTR (val, 1, 4),
+                                      SUBSTR (val, 5, 3),
+                                      SUBSTR (val, 8, LENGTH (val) - 7),
+                                      prm_id,
+                                      prm_usuario);
+                END IF;
+            /*  ********    */
+
             ELSE
                 error_dui :=
                        error_dui
@@ -8556,6 +8590,17 @@ AS
                                 SYSDATE,
                                 prm_id,
                                 prm_tipo_etapa);
+
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (SUBSTR (val, 1, 4),
+                                          SUBSTR (val, 5, 3),
+                                          SUBSTR (val, 8, LENGTH (val) - 7),
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+                /*  ********    */
                 ELSE
                     error_dui :=
                            error_dui
@@ -8690,6 +8735,18 @@ AS
                                 SYSDATE,
                                 prm_id,
                                 prm_tipo_etapa);
+
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
 
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
@@ -8849,6 +8906,18 @@ AS
                                 prm_id,
                                 prm_tipo_etapa);
 
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
+
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
                                                   ali_obs_valor,
@@ -9007,6 +9076,18 @@ AS
                                 prm_id,
                                 prm_tipo_etapa);
 
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
+
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
                                                   ali_obs_valor,
@@ -9164,6 +9245,18 @@ AS
                                 SYSDATE,
                                 prm_id,
                                 prm_tipo_etapa);
+
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
 
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
@@ -9366,6 +9459,19 @@ AS
                                 SYSDATE,
                                 prm_id,
                                 prm_tipo_etapa);
+
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
+
 
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
@@ -9611,6 +9717,18 @@ AS
                                 SYSDATE,
                                 prm_id,
                                 prm_tipo_etapa);
+
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
 
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
@@ -9890,6 +10008,7 @@ AS
                             SYSDATE,
                             prm_id,
                             prm_tipo_etapa);
+
 
                 INSERT INTO fis_alcance_item (alc_alcance_id,
                                               ali_numero_item,
@@ -10335,6 +10454,18 @@ AS
                                 prm_id,
                                 prm_tipo_etapa);
 
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
+
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
                                                   ali_obs_valor,
@@ -10578,6 +10709,18 @@ AS
                                 SYSDATE,
                                 prm_id,
                                 prm_tipo_etapa);
+
+                    /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                    IF prm_tipo_etapa = 'AMPLIATORIA'
+                    THEN
+                        graba_ficha_mira (v_key_year,
+                                          v_key_cou,
+                                          v_reg_nber,
+                                          prm_id,
+                                          prm_usuario);
+                    END IF;
+
+                    /*  ********    */
 
                     INSERT INTO fis_alcance_item (alc_alcance_id,
                                                   ali_numero_item,
@@ -10835,6 +10978,18 @@ AS
                                     SYSDATE,
                                     prm_id,
                                     prm_tipo_etapa);
+
+                        /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                        IF prm_tipo_etapa = 'AMPLIATORIA'
+                        THEN
+                            graba_ficha_mira (v_key_year,
+                                              v_key_cou,
+                                              v_reg_nber,
+                                              prm_id,
+                                              prm_usuario);
+                        END IF;
+
+                        /*  ********    */
 
                         INSERT INTO fis_alcance_item (alc_alcance_id,
                                                       ali_numero_item,
@@ -11183,6 +11338,18 @@ AS
                                     prm_id,
                                     prm_tipo_etapa);
 
+                        /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                        IF prm_tipo_etapa = 'AMPLIATORIA'
+                        THEN
+                            graba_ficha_mira (v_key_year,
+                                              v_key_cou,
+                                              v_reg_nber,
+                                              prm_id,
+                                              prm_usuario);
+                        END IF;
+
+                        /*  ********    */
+
                         INSERT INTO fis_alcance_item (alc_alcance_id,
                                                       ali_numero_item,
                                                       ali_obs_valor,
@@ -11444,6 +11611,18 @@ AS
                                     prm_id,
                                     prm_tipo_etapa);
 
+                        /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                        IF prm_tipo_etapa = 'AMPLIATORIA'
+                        THEN
+                            graba_ficha_mira (v_key_year,
+                                              v_key_cou,
+                                              v_reg_nber,
+                                              prm_id,
+                                              prm_usuario);
+                        END IF;
+
+                        /*  ********    */
+
                         INSERT INTO fis_alcance_item (alc_alcance_id,
                                                       ali_numero_item,
                                                       ali_obs_valor,
@@ -11700,6 +11879,18 @@ AS
                                     SYSDATE,
                                     prm_id,
                                     prm_tipo_etapa);
+
+                        /*  ACTUALIZA ESTADO FICHA INFORMATIVA  */
+                        IF prm_tipo_etapa = 'AMPLIATORIA'
+                        THEN
+                            graba_ficha_mira (v_key_year,
+                                              v_key_cou,
+                                              v_reg_nber,
+                                              prm_id,
+                                              prm_usuario);
+                        END IF;
+
+                        /*  ********    */
 
                         INSERT INTO fis_alcance_item (alc_alcance_id,
                                                       ali_numero_item,
@@ -13480,6 +13671,47 @@ AS
                 res :=
                     'CORRECTOSe registr&oacute; correctamente el Control '
                     || v_codigofisca;
+
+                /*  ACTUALIZAR EL ESTADO DE FICHA INFORMATIVA EN EL SISTEMA MIRA  */
+                IF v_tipocontrol = 'POSTERIOR' OR v_tipocontrol = 'DIFERIDO'
+                THEN
+                    SELECT   f.fis_codigo_fiscalizador
+                      INTO   v_fiscalizador
+                      FROM   fis_fiscalizador f
+                     WHERE       f.ctl_control_id = prm_codigo
+                             AND f.fis_num = 0
+                             AND f.fis_cargo = 'FISCALIZADOR'
+                             AND f.fis_lstope = 'U'
+                             AND ROWNUM = 1;
+
+                    IF prm_gerencia = 'GNF'
+                    THEN
+                        v_tipocontrol := v_tipocontrol || '_GNF';
+                    END IF;
+
+                    FOR i
+                    IN (SELECT   a.alc_gestion, a.alc_aduana, a.alc_numero
+                          FROM   fis_alcance a
+                         WHERE       a.ctl_control_id = prm_codigo
+                                 AND a.alc_num = 0
+                                 AND a.alc_lstope = 'U'
+                                 AND a.alc_tipo_tramite = 'DUI')
+                    LOOP
+                        mira.pkg_fisca.graba_mira_fis (
+                            i.alc_gestion,
+                            i.alc_aduana,
+                            i.alc_numero,
+                            v_tipocontrol,
+                            v_fiscalizador,
+                            'REGISTRADO POR FISAP',
+                            prm_usuario);
+                    END LOOP;
+                END IF;
+
+                /*  *****************   */
+                COMMIT;
+
+
                 RETURN res;
             END IF;
 
@@ -13679,42 +13911,6 @@ AS
                 res :=
                     'CORRECTOSe registr&oacute; correctamente el Control '
                     || v_codigofisca;
-
-
-                /*  ACTUALIZAR EL ESTADO DE FICHA INFORMATIVA EN EL SISTEMA MIRA  */
-                IF v_tipocontrol = 'POSTERIOR' OR v_tipocontrol = 'DIFERIDO'
-                THEN
-                    SELECT   f.fis_codigo_fiscalizador
-                      INTO   v_fiscalizador
-                      FROM   fis_fiscalizador f
-                     WHERE       f.ctl_control_id = 201740
-                             AND f.fis_num = 0
-                             AND f.fis_cargo = 'FISCALIZADOR'
-                             AND f.fis_lstope = 'U'
-                             AND ROWNUM = 1;
-
-
-                    FOR i
-                    IN (SELECT   a.alc_gestion, a.alc_aduana, a.alc_numero
-                          FROM   fis_alcance a
-                         WHERE       a.ctl_control_id = prm_codigo
-                                 AND a.alc_num = 0
-                                 AND a.alc_lstope = 'U'
-                                 AND a.alc_tipo_tramite = 'DUI')
-                    LOOP
-                        mira.pkg_fisca.graba_mira_fis (
-                            i.alc_gestion,
-                            i.alc_aduana,
-                            i.alc_numero,
-                            v_tipocontrol,
-                            v_fiscalizador,
-                            'REGISTRADO POR FISAP',
-                            prm_usuario);
-                    END LOOP;
-                END IF;
-
-                /*  *****************   */
-                COMMIT;
 
                 RETURN res;
             END IF;
@@ -16161,6 +16357,45 @@ AS
             COMMIT;
             RETURN 'CORRECTOEl recibo se borr&oacute; correctamente';
         END IF;
+    END;
+
+    PROCEDURE graba_ficha_mira (prm_gestion    VARCHAR2,
+                                prm_aduana     VARCHAR2,
+                                prm_numero     VARCHAR2,
+                                prm_codigo     VARCHAR2,
+                                prm_usuario    VARCHAR2)
+    IS
+        v_fiscalizador   VARCHAR2 (30);
+        v_tipo_control   VARCHAR2 (30);
+    BEGIN
+        SELECT   f.fis_codigo_fiscalizador
+          INTO   v_fiscalizador
+          FROM   fis_fiscalizador f
+         WHERE       f.ctl_control_id = prm_codigo
+                 AND f.fis_num = 0
+                 AND f.fis_cargo = 'FISCALIZADOR'
+                 AND f.fis_lstope = 'U'
+                 AND ROWNUM = 1;
+
+        SELECT   f.ctl_cod_tipo
+          INTO   v_tipo_control
+          FROM   fis_control f
+         WHERE       f.ctl_control_id = prm_codigo
+                 AND f.ctl_num = 0
+                 AND f.ctl_lstope = 'U';
+
+        IF v_tipo_control = 'GNF'
+        THEN
+            v_tipo_control := v_tipo_control || '_GNF';
+        END IF;
+
+        mira.pkg_fisca.graba_mira_fis (prm_gestion,
+                                       prm_aduana,
+                                       prm_numero,
+                                       v_tipo_control,
+                                       v_fiscalizador,
+                                       'REGISTRADO POR FISAP',
+                                       prm_usuario);
     END;
 END;
 /
