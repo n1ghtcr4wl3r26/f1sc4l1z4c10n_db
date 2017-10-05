@@ -1,10 +1,36 @@
 CREATE OR REPLACE 
 PACKAGE pkg_general
-/* Formatted on 18/07/2017 6:20:16 (QP5 v5.126) */
+/* Formatted on 04/10/2017 19:45:23 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
+    FUNCTION cantidad_tramites (prm_control IN VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION patron_declaracion (prm_sadregyear   IN VARCHAR2,
+                                 prm_keycuo          VARCHAR2,
+                                 prm_sadregnber      VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION items_control (prm_control IN VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION fecha_levante (prm_sadregyear   IN VARCHAR2,
+                            prm_keycuo          VARCHAR2,
+                            prm_sadregnber      VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION devuelve_fecha_levante (prm_key_year   IN VARCHAR2,
+                                     prm_key_cuo    IN VARCHAR2,
+                                     prm_key_dec    IN VARCHAR2,
+                                     prm_key_nber   IN VARCHAR2)
+        RETURN VARCHAR2;
+
     FUNCTION valida_fecha (prm_fecha IN VARCHAR2)
+        RETURN NUMBER;
+
+    FUNCTION valida_fechas (prm_fechaini   IN VARCHAR2,
+                            prm_fechafin   IN VARCHAR2)
         RETURN NUMBER;
 
     FUNCTION devuelve_estadocontrol (prm_codigo IN VARCHAR2)
@@ -48,6 +74,9 @@ IS
         RETURN cursortype;
 
     FUNCTION lista_gerencias (gerencia VARCHAR2)
+        RETURN cursortype;
+
+    FUNCTION lista_gerencias2 (gerencia VARCHAR2)
         RETURN cursortype;
 
     FUNCTION devuelve_datos_nit (prm_nit IN VARCHAR2)
@@ -121,8 +150,151 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 18/07/2017 10:34:12 (QP5 v5.126) */
+/* Formatted on 04/10/2017 19:43:47 (QP5 v5.126) */
 AS
+    FUNCTION cantidad_tramites (prm_control IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (5);
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   res
+          FROM   fis_alcance a
+         WHERE       a.ctl_control_id = prm_control
+                 AND a.alc_num = 0
+                 AND a.alc_lstope = 'U';
+
+        RETURN res;
+    END cantidad_tramites;
+
+    FUNCTION patron_declaracion (prm_sadregyear   IN VARCHAR2,
+                                 prm_keycuo          VARCHAR2,
+                                 prm_sadregnber      VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (5);
+    BEGIN
+        SELECT   g.sad_typ_dec || g.sad_typ_proc
+          INTO   res
+          FROM   ops$asy.sad_gen g
+         WHERE       g.sad_reg_year = prm_sadregyear
+                 AND g.key_cuo = prm_keycuo
+                 AND g.sad_reg_serial = 'C'
+                 AND g.sad_reg_nber = prm_sadregnber
+                 AND g.sad_num = 0;
+
+
+        RETURN res;
+    END patron_declaracion;
+
+    FUNCTION items_control (prm_control IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (5);
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   res
+          FROM   fis_alcance a, fis_alcance_item b
+         WHERE       a.ctl_control_id = prm_control
+                 AND a.alc_num = 0
+                 AND a.alc_lstope = 'U'
+                 AND a.alc_alcance_id = b.alc_alcance_id
+                 AND b.ali_num = 0
+                 AND b.ali_lstope = 'U';
+
+        RETURN res;
+    END items_control;
+
+    FUNCTION fecha_levante (prm_sadregyear   IN VARCHAR2,
+                            prm_keycuo        IN  VARCHAR2,
+                            prm_sadregnber   IN   VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (50);
+    BEGIN
+        SELECT   levante
+          INTO   res
+          FROM   (SELECT      TO_CHAR (n.upd_dat, 'dd/mm/yyyy')
+                           || ' '
+                           || n.upd_hor
+                               levante
+                    FROM   ops$asy.sad_spy n, ops$asy.sad_gen g
+                   WHERE       n.key_year = g.key_year
+                           AND n.key_cuo = g.key_cuo
+                           AND n.key_dec = g.key_dec
+                           AND g.key_dec IS NOT NULL
+                           AND n.key_nber = g.key_nber
+                           AND ( (    n.spy_sta = '6'
+                                  AND n.spy_act = '9'
+                                  AND n.sad_clr = 0)
+                                OR (    n.spy_sta = '10'
+                                    AND n.spy_act = '24'
+                                    AND n.sad_clr = 0))
+                           AND g.sad_reg_year = prm_sadregyear
+                           AND g.key_cuo = prm_keycuo
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = prm_sadregnber
+                           AND g.sad_num = 0
+                  UNION ALL
+                  SELECT      TO_CHAR (n.upd_dat, 'dd/mm/yyyy')
+                           || ' '
+                           || n.upd_hor
+                               levante
+                    FROM   ops$asy.sad_spy n, ops$asy.sad_gen g
+                   WHERE       n.key_year = g.key_year
+                           AND n.key_cuo = g.key_cuo
+                           AND g.key_dec IS NULL
+                           AND n.key_dec IS NULL
+                           AND n.key_nber = g.key_nber
+                           AND ( (    n.spy_sta = '6'
+                                  AND n.spy_act = '9'
+                                  AND n.sad_clr = 0)
+                                OR (    n.spy_sta = '10'
+                                    AND n.spy_act = '24'
+                                    AND n.sad_clr = 0))
+                           AND g.sad_reg_year = prm_sadregyear
+                           AND g.key_cuo = prm_keycuo
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = prm_sadregnber
+                           AND g.sad_num = 0) tbl;
+
+        RETURN res;
+    END;
+
+    FUNCTION devuelve_fecha_levante (prm_key_year   IN VARCHAR2,
+                                     prm_key_cuo    IN VARCHAR2,
+                                     prm_key_dec    IN VARCHAR2,
+                                     prm_key_nber   IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res    VARCHAR2 (50) := '';
+        cont   NUMBER (8) := 0;
+    BEGIN
+        SELECT   TO_CHAR (n.upd_dat, 'dd/mm/yyyy') || ' ' || n.upd_hor
+                     AS fecha_levante
+          INTO   res
+          FROM   ops$asy.sad_spy n
+         WHERE       n.key_year = prm_key_year
+                 AND n.key_cuo = prm_key_cuo
+                 AND NVL (n.key_dec, '-') = NVL (prm_key_dec, '-')
+                 AND n.key_nber = prm_key_nber
+                 AND ( (n.spy_sta = '6' AND n.spy_act = '9' AND n.sad_clr = 0)
+                      OR (    n.spy_sta = '10'
+                          AND n.spy_act = '24'
+                          AND n.sad_clr = 0));
+
+        IF res = ''
+        THEN
+            res := '-';
+        END IF;
+
+        RETURN res;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            RETURN '-';
+    END devuelve_fecha_levante;
+
     FUNCTION valida_fecha (prm_fecha IN VARCHAR2)
         RETURN NUMBER
     IS
@@ -136,6 +308,33 @@ AS
         THEN
             ROLLBACK;
             RETURN 1;
+    END;
+
+    FUNCTION valida_fechas (prm_fechaini   IN VARCHAR2,
+                            prm_fechafin   IN VARCHAR2)
+        RETURN NUMBER
+    IS
+        res      NUMBER;
+        fecini   DATE;
+        fecfin   DATE;
+    BEGIN
+        IF valida_fecha (prm_fechaini) = 1
+        THEN
+            RETURN 2;
+        END IF;
+
+        IF valida_fecha (prm_fechafin) = 1
+        THEN
+            RETURN 3;
+        END IF;
+
+        IF TO_DATE (prm_fechafin, 'dd/mm/yyyy') <
+               TO_DATE (prm_fechaini, 'dd/mm/yyyy')
+        THEN
+            RETURN 1;
+        END IF;
+
+        RETURN 0;
     END;
 
     FUNCTION devuelve_estadocontrol (prm_codigo IN VARCHAR2)
@@ -1234,6 +1433,39 @@ AS
                                AND a.reg_cod = gerencia
                     ORDER BY   1;
             END IF;
+        END IF;
+
+        RETURN ct;
+    END;
+
+    FUNCTION lista_gerencias2 (gerencia VARCHAR2)
+        RETURN cursortype
+    IS
+        ct   cursortype;
+    BEGIN
+        IF gerencia = '15'
+        THEN
+            OPEN ct FOR
+                  SELECT   a.ger_id id,
+                           a.ger_codigo codigo2,
+                           a.ger_descripcion descripcion,
+                           a.reg_cod codigo,
+                           a.reg_lstope lstope
+                    FROM   fis_gerencia a
+                   WHERE   reg_lstope = 'U' AND a.ger_id > 0
+                ORDER BY   1;
+        ELSE
+            OPEN ct FOR
+                  SELECT   a.ger_id id,
+                           a.ger_codigo codigo2,
+                           a.ger_descripcion descripcion,
+                           a.reg_cod codigo,
+                           a.reg_lstope lstope
+                    FROM   fis_gerencia a
+                   WHERE       reg_lstope = 'U'
+                           AND a.ger_id > 0
+                           AND a.reg_cod = gerencia
+                ORDER BY   1;
         END IF;
 
         RETURN ct;
