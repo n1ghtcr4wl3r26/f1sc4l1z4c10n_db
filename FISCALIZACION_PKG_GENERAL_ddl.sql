@@ -1,8 +1,19 @@
 CREATE OR REPLACE 
 PACKAGE pkg_general
-/* Formatted on 04/10/2017 19:45:23 (QP5 v5.126) */
+/* Formatted on 05/10/2017 15:25:50 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
+
+    FUNCTION plazo_dias_orden (prm_control IN VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION origen_dui (prm_sadregyear   IN VARCHAR2,
+                         prm_keycuo          VARCHAR2,
+                         prm_sadregnber      VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION fecha_registro_orden (prm_control IN VARCHAR2)
+        RETURN VARCHAR2;
 
     FUNCTION cantidad_tramites (prm_control IN VARCHAR2)
         RETURN VARCHAR2;
@@ -150,8 +161,183 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 04/10/2017 19:43:47 (QP5 v5.126) */
+/* Formatted on 05/10/2017 15:25:57 (QP5 v5.126) */
 AS
+    FUNCTION plazo_dias_orden (prm_control IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (30);
+        plazo  number;
+        fecreg date;
+        dif number;
+    BEGIN
+
+    SELECT   a.est_fecsys into fecreg
+   FROM fis_estado a
+     where a.ctl_control_id = prm_control
+     and a.est_estado  = 'REGISTRADO';
+
+   if  fecreg is null then
+
+   return '-';
+
+   else
+
+         SELECT b.inn_plazo_conclusion into plazo
+           FROM fis_info_notificacion b
+             where b.ctl_control_id = prm_control
+             and b.inn_num = 0
+             and b.inn_lstope = 'U';
+
+
+        if plazo is null then
+            return '-';
+
+        else
+            dif := trunc(sysdate) - trunc(fecreg) + plazo -200;
+
+
+            if dif > 0 then
+                return '<span class="label label-danger">Fuera de Plazo por '||dif||' d&iacute;as</span>';
+            else
+
+                if dif*(-1) < 10 then
+                    return '<span class="label label-warning">En Plazo, '||dif*(-1)||' d&iacute;as restantes</span>';
+                else
+                    return '<span class="label label-success">En Plazo, '||dif*(-1)||' d&iacute;as restantes</span>';
+                end if;
+            end if;
+
+        end if;
+
+   end if;
+
+
+   EXCEPTION
+        WHEN OTHERS
+        THEN
+            RETURN '-';
+    END;
+
+    FUNCTION origen_dui (prm_sadregyear   IN VARCHAR2,
+                         prm_keycuo          VARCHAR2,
+                         prm_sadregnber      VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (50);
+        aux   NUMBER;
+    BEGIN
+        SELECT   COUNT (DISTINCT ciu)
+          INTO   aux
+          FROM   (SELECT   itm.saditm_cty_origcod ciu
+                    FROM   ops$asy.sad_gen, ops$asy.sad_itm itm --,ops$asy.unctytab ctyo
+                   WHERE       sad_gen.key_year = itm.key_year
+                           AND sad_gen.key_cuo = itm.key_cuo
+                           AND sad_gen.key_dec = itm.key_dec
+                           AND sad_gen.key_nber = itm.key_nber
+                           AND itm.sad_num = 0
+                           AND sad_gen.key_dec IS NOT NULL
+                           AND sad_gen.sad_reg_year = prm_sadregyear
+                           AND sad_gen.key_cuo = prm_keycuo
+                           AND sad_gen.sad_reg_serial = 'C'
+                           AND sad_gen.sad_reg_nber = prm_sadregnber
+                           AND sad_gen.sad_num = 0
+                  UNION ALL
+                  SELECT   itm.saditm_cty_origcod ciu
+                    FROM   ops$asy.sad_gen, ops$asy.sad_itm itm --,ops$asy.unctytab ctyo
+                   WHERE       sad_gen.key_year = itm.key_year
+                           AND sad_gen.key_cuo = itm.key_cuo
+                           AND sad_gen.key_dec IS NULL
+                           AND itm.key_dec IS NULL
+                           AND sad_gen.key_nber = itm.key_nber
+                           AND itm.sad_num = 0
+                           AND sad_gen.sad_reg_year = prm_sadregyear
+                           AND sad_gen.key_cuo = prm_keycuo
+                           AND sad_gen.sad_reg_serial = 'C'
+                           AND sad_gen.sad_reg_nber = prm_sadregnber
+                           AND sad_gen.sad_num = 0) tbl;
+
+        IF aux = 0
+        THEN
+            RETURN '-';
+        END IF;
+
+        IF aux > 1
+        THEN
+            RETURN 'VARIOS';
+        ELSE
+            SELECT   DISTINCT ciu
+              INTO   res
+              FROM   (SELECT   ctyo.cty_dsc ciu
+                        FROM   ops$asy.sad_gen,
+                               ops$asy.sad_itm itm,
+                               ops$asy.unctytab ctyo
+                       WHERE       sad_gen.key_year = itm.key_year
+                               AND sad_gen.key_cuo = itm.key_cuo
+                               AND sad_gen.key_dec = itm.key_dec
+                               AND sad_gen.key_nber = itm.key_nber
+                               AND itm.sad_num = 0
+                               AND sad_gen.key_dec IS NOT NULL
+                               AND sad_gen.sad_reg_year = prm_sadregyear
+                               AND sad_gen.key_cuo = prm_keycuo
+                               AND sad_gen.sad_reg_serial = 'C'
+                               AND sad_gen.sad_reg_nber = prm_sadregnber
+                               AND sad_gen.sad_num = 0
+                               AND itm.saditm_cty_origcod = ctyo.cty_cod(+)
+                               AND ctyo.lst_ope = 'U'
+                      UNION ALL
+                      SELECT   ctyo.cty_dsc ciu
+                        FROM   ops$asy.sad_gen,
+                               ops$asy.sad_itm itm,
+                               ops$asy.unctytab ctyo
+                       WHERE       sad_gen.key_year = itm.key_year
+                               AND sad_gen.key_cuo = itm.key_cuo
+                               AND sad_gen.key_dec IS NULL
+                               AND itm.key_dec IS NULL
+                               AND sad_gen.key_nber = itm.key_nber
+                               AND itm.sad_num = 0
+                               AND sad_gen.sad_reg_year = prm_sadregyear
+                               AND sad_gen.key_cuo = prm_keycuo
+                               AND sad_gen.sad_reg_serial = 'C'
+                               AND sad_gen.sad_reg_nber = prm_sadregnber
+                               AND sad_gen.sad_num = 0
+                               AND itm.saditm_cty_origcod = ctyo.cty_cod(+)
+                               AND ctyo.lst_ope = 'U') tbl;
+
+            RETURN res;
+        END IF;
+    END;
+
+    FUNCTION fecha_registro_orden (prm_control IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (30);
+        aux NUMBER;
+    BEGIN
+        SELECT   count(1)
+          INTO   aux
+          FROM   fis_estado a
+         WHERE       a.ctl_control_id = prm_control
+                 AND a.est_estado = 'REGISTRADO'
+                 AND est_lstope = 'U';
+
+        if aux = 0 then
+        return '-';
+    else
+        SELECT   NVL (TO_CHAR (MIN (a.est_fecsys), 'dd/mm/yyyy'), '-')
+          INTO   res
+          FROM   fis_estado a
+         WHERE       a.ctl_control_id = prm_control
+                 AND a.est_estado = 'REGISTRADO'
+                 AND est_lstope = 'U';
+                 return res;
+                 end if;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            RETURN '-';
+    END;
+
     FUNCTION cantidad_tramites (prm_control IN VARCHAR2)
         RETURN VARCHAR2
     IS
@@ -206,8 +392,8 @@ AS
     END items_control;
 
     FUNCTION fecha_levante (prm_sadregyear   IN VARCHAR2,
-                            prm_keycuo        IN  VARCHAR2,
-                            prm_sadregnber   IN   VARCHAR2)
+                            prm_keycuo       IN VARCHAR2,
+                            prm_sadregnber   IN VARCHAR2)
         RETURN VARCHAR2
     IS
         res   VARCHAR2 (50);

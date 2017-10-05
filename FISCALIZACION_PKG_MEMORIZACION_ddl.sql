@@ -1,10 +1,20 @@
 CREATE OR REPLACE 
 PACKAGE pkg_memorizacion
-/* Formatted on 17-jul.-2017 3:04:40 (QP5 v5.126) */
+/* Formatted on 05/10/2017 16:37:26 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
     TYPE var_array IS TABLE OF VARCHAR2 (30);
+
+    FUNCTION bandeja_legal (prm_gerencia IN VARCHAR2, ct OUT cursortype)
+        RETURN VARCHAR2;
+
+    FUNCTION bandeja_fiscalizador (prm_fiscalizador   IN     VARCHAR2,
+                                   ct                    OUT cursortype)
+        RETURN VARCHAR2;
+
+    FUNCTION bandeja_jefe (prm_gerencia IN VARCHAR2, ct OUT cursortype)
+        RETURN VARCHAR2;
 
     FUNCTION devuelve_fecha
         RETURN VARCHAR2;
@@ -529,7 +539,7 @@ IS
         RETURN VARCHAR2;
 
     FUNCTION devuelve_recibos (prm_codigocontrol   IN     VARCHAR2,
-                                ct                     OUT cursortype)
+                               ct                     OUT cursortype)
         RETURN VARCHAR2;
 
     FUNCTION borra_recibo (prm_id VARCHAR2, prm_usuario VARCHAR2)
@@ -545,8 +555,655 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_memorizacion
-/* Formatted on 18-ago.-2017 19:43:20 (QP5 v5.126) */
+/* Formatted on 05/10/2017 16:37:39 (QP5 v5.126) */
 AS
+    FUNCTION bandeja_legal (prm_gerencia IN VARCHAR2, ct OUT cursortype)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (10);
+    BEGIN
+        OPEN ct FOR
+            SELECT   a.ctl_control_id,
+                     DECODE (
+                         b.est_estado,
+                         'MEMORIZADO',
+                         TO_CHAR (a.ctl_control_id),
+                         a.ctl_cod_gestion
+                         || DECODE (a.ctl_cod_tipo,
+                                    'DIFERIDO', 'CD',
+                                    'POSTERIOR', 'FP',
+                                    'AMPLIATORIA DIFERIDO', 'CD',
+                                    'AMPLIATORIA POSTERIOR', 'FP',
+                                    '-')
+                         || a.ctl_cod_gerencia
+                         || DECODE (
+                                a.ctl_amp_correlativo,
+                                NULL,
+                                '00',
+                                DECODE (LENGTH (a.ctl_amp_correlativo),
+                                        1, '0' || a.ctl_amp_correlativo,
+                                        a.ctl_amp_correlativo))
+                         || DECODE (LENGTH (a.ctl_cod_numero),
+                                    1, '0000' || a.ctl_cod_numero,
+                                    2, '000' || a.ctl_cod_numero,
+                                    3, '00' || a.ctl_cod_numero,
+                                    4, '0' || a.ctl_cod_numero,
+                                    a.ctl_cod_numero))
+                         codigo_control,
+                     DECODE (a.ctl_cod_tipo,
+                             'DIFERIDO',
+                             'CONTROL DIFERIDO',
+                             'POSTERIOR',
+                             'FAP',
+                             'AMPLIATORIA DIFERIDO',
+                             'AMPLIATORIA CONTROL DIFERIDO',
+                             'AMPLIATORIA POSTERIOR',
+                             'AMPLIATORIA FAP',
+                             '-')
+                         tipo_control,
+                     pkg_general.fecha_registro_orden (a.ctl_control_id)
+                         fecha_reg,
+                     c.alc_tipo_tramite || ' : '
+                     || DECODE (
+                            c.alc_tipo_tramite,
+                            'DUI',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || 'C-'
+                            || c.alc_numero,
+                            'DUE',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || 'C-'
+                            || c.alc_numero,
+                            'MIC',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || c.alc_numero,
+                            'FACTURA',
+                               c.alc_numero
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor
+                            || '-'
+                            || pkg_general.devuelve_pais (c.alc_pais),
+                            'TRANSFERENCIA',
+                               c.alc_gestion
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor,
+                            'OTROS',
+                               c.alc_gestion
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor
+                            || '-'
+                            || c.alc_tipo_documento,
+                            '-')
+                         tramite,
+                     '1' cantidad,
+                     pkg_general.patron_declaracion (c.alc_gestion,
+                                                     c.alc_aduana,
+                                                     c.alc_numero)
+                         patron,
+                     pkg_general.items_control (a.ctl_control_id) items,
+                     DECODE (a.ctl_tipo_doc_identidad,
+                             'NIT', TO_CHAR (a.ctl_nit),
+                             TO_CHAR (a.ctl_ci) || ' ' || a.ctl_ci_exp)
+                         identidad_doc,
+                     DECODE (
+                         a.ctl_tipo_doc_identidad,
+                         'NIT',
+                         a.ctl_razon_social,
+                            a.ctl_nombres
+                         || ' '
+                         || a.ctl_appat
+                         || ' '
+                         || a.ctl_apmat)
+                         identidad_nombre,
+                     pkg_general.fecha_levante (c.alc_gestion,
+                                                c.alc_aduana,
+                                                c.alc_numero)
+                         levante,
+                     b.est_estado estado,
+                     TO_CHAR (b.est_fecsys, 'dd/mm/yyyy') fecha_reg,
+                     pkg_general.origen_dui (c.alc_gestion,
+                                             c.alc_aduana,
+                                             c.alc_numero)
+                         origen,
+                     pkg_general.plazo_dias_orden (a.ctl_control_id) plazo
+              FROM   fis_control a, fis_estado b, fis_alcance c
+             WHERE       b.est_num = 0
+                     AND b.est_lstope = 'U'
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.ctl_control_id = a.ctl_control_id
+                     AND b.est_estado IN ('CONCLUIDO')
+                     AND a.ctl_cod_tipo = 'DIFERIDO'
+                     AND a.ctl_control_id = c.ctl_control_id
+                     AND c.alc_num = 0
+                     AND c.alc_lstope = 'U'
+                     AND a.ctl_cod_gerencia = prm_gerencia
+            UNION ALL
+            SELECT   a.ctl_control_id,
+                     DECODE (
+                         b.est_estado,
+                         'MEMORIZADO',
+                         TO_CHAR (a.ctl_control_id),
+                         a.ctl_cod_gestion
+                         || DECODE (a.ctl_cod_tipo,
+                                    'DIFERIDO', 'CD',
+                                    'POSTERIOR', 'FP',
+                                    'AMPLIATORIA DIFERIDO', 'CD',
+                                    'AMPLIATORIA POSTERIOR', 'FP',
+                                    '-')
+                         || a.ctl_cod_gerencia
+                         || DECODE (
+                                a.ctl_amp_correlativo,
+                                NULL,
+                                '00',
+                                DECODE (LENGTH (a.ctl_amp_correlativo),
+                                        1, '0' || a.ctl_amp_correlativo,
+                                        a.ctl_amp_correlativo))
+                         || DECODE (LENGTH (a.ctl_cod_numero),
+                                    1, '0000' || a.ctl_cod_numero,
+                                    2, '000' || a.ctl_cod_numero,
+                                    3, '00' || a.ctl_cod_numero,
+                                    4, '0' || a.ctl_cod_numero,
+                                    a.ctl_cod_numero))
+                         codigo_control,
+                     DECODE (a.ctl_cod_tipo,
+                             'DIFERIDO',
+                             'CONTROL DIFERIDO',
+                             'POSTERIOR',
+                             'FAP',
+                             'AMPLIATORIA DIFERIDO',
+                             'AMPLIATORIA CONTROL DIFERIDO',
+                             'AMPLIATORIA POSTERIOR',
+                             'AMPLIATORIA FAP',
+                             '-')
+                         tipo_control,
+                     pkg_general.fecha_registro_orden (a.ctl_control_id)
+                         fecha_reg,
+                     'TRAMITES',
+                     pkg_general.cantidad_tramites (a.ctl_control_id),
+                     '-' patron,
+                     pkg_general.items_control (a.ctl_control_id) items,
+                     DECODE (a.ctl_tipo_doc_identidad,
+                             'NIT', TO_CHAR (a.ctl_nit),
+                             TO_CHAR (a.ctl_ci) || ' ' || a.ctl_ci_exp)
+                         identidad_doc,
+                     DECODE (
+                         a.ctl_tipo_doc_identidad,
+                         'NIT',
+                         a.ctl_razon_social,
+                            a.ctl_nombres
+                         || ' '
+                         || a.ctl_appat
+                         || ' '
+                         || a.ctl_apmat)
+                         identidad_nombre,
+                     '-' levante,
+                     b.est_estado estado,
+                     TO_CHAR (b.est_fecsys, 'dd/mm/yyyy') fecha_reg,
+                     '-' origen,
+                     pkg_general.plazo_dias_orden (a.ctl_control_id) plazo
+              FROM   fis_control a, fis_estado b
+             WHERE       b.est_num = 0
+                     AND b.est_lstope = 'U'
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.ctl_control_id = a.ctl_control_id
+                     AND b.est_estado IN ('CONCLUIDO')
+                     AND a.ctl_cod_tipo = 'POSTERIOR'
+                     AND a.ctl_cod_gerencia = prm_gerencia
+            ORDER BY   3 DESC, 2 DESC;
+
+        RETURN 'OK';
+    END;
+
+    FUNCTION bandeja_fiscalizador (prm_fiscalizador   IN     VARCHAR2,
+                                   ct                    OUT cursortype)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (10);
+    BEGIN
+        OPEN ct FOR
+            SELECT   a.ctl_control_id,
+                     DECODE (
+                         b.est_estado,
+                         'MEMORIZADO',
+                         TO_CHAR (a.ctl_control_id),
+                         a.ctl_cod_gestion
+                         || DECODE (a.ctl_cod_tipo,
+                                    'DIFERIDO', 'CD',
+                                    'POSTERIOR', 'FP',
+                                    'AMPLIATORIA DIFERIDO', 'CD',
+                                    'AMPLIATORIA POSTERIOR', 'FP',
+                                    '-')
+                         || a.ctl_cod_gerencia
+                         || DECODE (
+                                a.ctl_amp_correlativo,
+                                NULL,
+                                '00',
+                                DECODE (LENGTH (a.ctl_amp_correlativo),
+                                        1, '0' || a.ctl_amp_correlativo,
+                                        a.ctl_amp_correlativo))
+                         || DECODE (LENGTH (a.ctl_cod_numero),
+                                    1, '0000' || a.ctl_cod_numero,
+                                    2, '000' || a.ctl_cod_numero,
+                                    3, '00' || a.ctl_cod_numero,
+                                    4, '0' || a.ctl_cod_numero,
+                                    a.ctl_cod_numero))
+                         codigo_control,
+                     DECODE (a.ctl_cod_tipo,
+                             'DIFERIDO',
+                             'CONTROL DIFERIDO',
+                             'POSTERIOR',
+                             'FAP',
+                             'AMPLIATORIA DIFERIDO',
+                             'AMPLIATORIA CONTROL DIFERIDO',
+                             'AMPLIATORIA POSTERIOR',
+                             'AMPLIATORIA FAP',
+                             '-')
+                         tipo_control,
+                     pkg_general.fecha_registro_orden (a.ctl_control_id)
+                         fecha_reg,
+                     c.alc_tipo_tramite || ' : '
+                     || DECODE (
+                            c.alc_tipo_tramite,
+                            'DUI',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || 'C-'
+                            || c.alc_numero,
+                            'DUE',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || 'C-'
+                            || c.alc_numero,
+                            'MIC',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || c.alc_numero,
+                            'FACTURA',
+                               c.alc_numero
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor
+                            || '-'
+                            || pkg_general.devuelve_pais (c.alc_pais),
+                            'TRANSFERENCIA',
+                               c.alc_gestion
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor,
+                            'OTROS',
+                               c.alc_gestion
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor
+                            || '-'
+                            || c.alc_tipo_documento,
+                            '-')
+                         tramite,
+                     '1' cantidad,
+                     pkg_general.patron_declaracion (c.alc_gestion,
+                                                     c.alc_aduana,
+                                                     c.alc_numero)
+                         patron,
+                     pkg_general.items_control (a.ctl_control_id) items,
+                     DECODE (a.ctl_tipo_doc_identidad,
+                             'NIT', TO_CHAR (a.ctl_nit),
+                             TO_CHAR (a.ctl_ci) || ' ' || a.ctl_ci_exp)
+                         identidad_doc,
+                     DECODE (
+                         a.ctl_tipo_doc_identidad,
+                         'NIT',
+                         a.ctl_razon_social,
+                            a.ctl_nombres
+                         || ' '
+                         || a.ctl_appat
+                         || ' '
+                         || a.ctl_apmat)
+                         identidad_nombre,
+                     pkg_general.fecha_levante (c.alc_gestion,
+                                                c.alc_aduana,
+                                                c.alc_numero)
+                         levante,
+                     b.est_estado estado,
+                     TO_CHAR (b.est_fecsys, 'dd/mm/yyyy') fecha_reg,
+                     pkg_general.origen_dui (c.alc_gestion,
+                                             c.alc_aduana,
+                                             c.alc_numero)
+                         origen,
+                     pkg_general.plazo_dias_orden (a.ctl_control_id) plazo
+              FROM   fis_control a,
+                     fis_estado b,
+                     fis_alcance c,
+                     fis_acceso f
+             WHERE       b.est_num = 0
+                     AND b.est_lstope = 'U'
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.ctl_control_id = a.ctl_control_id
+                     AND b.est_estado NOT IN ('MEMORIZADO', 'CONCLUIDO', 'CONCLUIDO-LEGAL')
+                     AND a.ctl_cod_tipo = 'DIFERIDO'
+                     AND a.ctl_control_id = c.ctl_control_id
+                     AND c.alc_num = 0
+                     AND c.alc_lstope = 'U'
+                     AND a.ctl_control_id = f.ctl_control_id
+                     AND f.fis_num = 0
+                     AND f.fis_lstope = 'U'
+                     AND f.fis_codigo_fiscalizador = prm_fiscalizador
+            UNION ALL
+            SELECT   a.ctl_control_id,
+                     DECODE (
+                         b.est_estado,
+                         'MEMORIZADO',
+                         TO_CHAR (a.ctl_control_id),
+                         a.ctl_cod_gestion
+                         || DECODE (a.ctl_cod_tipo,
+                                    'DIFERIDO', 'CD',
+                                    'POSTERIOR', 'FP',
+                                    'AMPLIATORIA DIFERIDO', 'CD',
+                                    'AMPLIATORIA POSTERIOR', 'FP',
+                                    '-')
+                         || a.ctl_cod_gerencia
+                         || DECODE (
+                                a.ctl_amp_correlativo,
+                                NULL,
+                                '00',
+                                DECODE (LENGTH (a.ctl_amp_correlativo),
+                                        1, '0' || a.ctl_amp_correlativo,
+                                        a.ctl_amp_correlativo))
+                         || DECODE (LENGTH (a.ctl_cod_numero),
+                                    1, '0000' || a.ctl_cod_numero,
+                                    2, '000' || a.ctl_cod_numero,
+                                    3, '00' || a.ctl_cod_numero,
+                                    4, '0' || a.ctl_cod_numero,
+                                    a.ctl_cod_numero))
+                         codigo_control,
+                     DECODE (a.ctl_cod_tipo,
+                             'DIFERIDO',
+                             'CONTROL DIFERIDO',
+                             'POSTERIOR',
+                             'FAP',
+                             'AMPLIATORIA DIFERIDO',
+                             'AMPLIATORIA CONTROL DIFERIDO',
+                             'AMPLIATORIA POSTERIOR',
+                             'AMPLIATORIA FAP',
+                             '-')
+                         tipo_control,
+                     pkg_general.fecha_registro_orden (a.ctl_control_id)
+                         fecha_reg,
+                     'TRAMITES',
+                     pkg_general.cantidad_tramites (a.ctl_control_id),
+                     '-' patron,
+                     pkg_general.items_control (a.ctl_control_id) items,
+                     DECODE (a.ctl_tipo_doc_identidad,
+                             'NIT', TO_CHAR (a.ctl_nit),
+                             TO_CHAR (a.ctl_ci) || ' ' || a.ctl_ci_exp)
+                         identidad_doc,
+                     DECODE (
+                         a.ctl_tipo_doc_identidad,
+                         'NIT',
+                         a.ctl_razon_social,
+                            a.ctl_nombres
+                         || ' '
+                         || a.ctl_appat
+                         || ' '
+                         || a.ctl_apmat)
+                         identidad_nombre,
+                     '-' levante,
+                     b.est_estado estado,
+                     TO_CHAR (b.est_fecsys, 'dd/mm/yyyy') fecha_reg,
+                     '-' origen,
+                     pkg_general.plazo_dias_orden (a.ctl_control_id) plazo
+              FROM   fis_control a, fis_estado b, fis_acceso f
+             WHERE       b.est_num = 0
+                     AND b.est_lstope = 'U'
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.ctl_control_id = a.ctl_control_id
+                     AND b.est_estado NOT IN ('MEMORIZADO', 'CONCLUIDO', 'CONCLUIDO-LEGAL')
+                     AND a.ctl_cod_tipo = 'POSTERIOR'
+                     AND a.ctl_control_id = f.ctl_control_id
+                     AND f.fis_num = 0
+                     AND f.fis_lstope = 'U'
+                     AND f.fis_codigo_fiscalizador = prm_fiscalizador
+            ORDER BY   3 DESC, 2 DESC;
+
+        RETURN 'OK';
+    END;
+
+    FUNCTION bandeja_jefe (prm_gerencia IN VARCHAR2, ct OUT cursortype)
+        RETURN VARCHAR2
+    IS
+        res   VARCHAR2 (10);
+    BEGIN
+        OPEN ct FOR
+            SELECT   a.ctl_control_id,
+                     DECODE (
+                         b.est_estado,
+                         'MEMORIZADO',
+                         TO_CHAR (a.ctl_control_id),
+                         a.ctl_cod_gestion
+                         || DECODE (a.ctl_cod_tipo,
+                                    'DIFERIDO', 'CD',
+                                    'POSTERIOR', 'FP',
+                                    'AMPLIATORIA DIFERIDO', 'CD',
+                                    'AMPLIATORIA POSTERIOR', 'FP',
+                                    '-')
+                         || a.ctl_cod_gerencia
+                         || DECODE (
+                                a.ctl_amp_correlativo,
+                                NULL,
+                                '00',
+                                DECODE (LENGTH (a.ctl_amp_correlativo),
+                                        1, '0' || a.ctl_amp_correlativo,
+                                        a.ctl_amp_correlativo))
+                         || DECODE (LENGTH (a.ctl_cod_numero),
+                                    1, '0000' || a.ctl_cod_numero,
+                                    2, '000' || a.ctl_cod_numero,
+                                    3, '00' || a.ctl_cod_numero,
+                                    4, '0' || a.ctl_cod_numero,
+                                    a.ctl_cod_numero))
+                         codigo_control,
+                     DECODE (a.ctl_cod_tipo,
+                             'DIFERIDO',
+                             'CONTROL DIFERIDO',
+                             'POSTERIOR',
+                             'FAP',
+                             'AMPLIATORIA DIFERIDO',
+                             'AMPLIATORIA CONTROL DIFERIDO',
+                             'AMPLIATORIA POSTERIOR',
+                             'AMPLIATORIA FAP',
+                             '-')
+                         tipo_control,
+                     DECODE (b.est_estado,
+                             'REGISTRADO',
+                             TO_CHAR (b.est_fecsys, 'dd/mm/yyyy'),
+                             '-')
+                         fecha_reg,
+                     c.alc_tipo_tramite || ' : '
+                     || DECODE (
+                            c.alc_tipo_tramite,
+                            'DUI',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || 'C-'
+                            || c.alc_numero,
+                            'DUE',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || 'C-'
+                            || c.alc_numero,
+                            'MIC',
+                               c.alc_gestion
+                            || '/'
+                            || c.alc_aduana
+                            || '/'
+                            || c.alc_numero,
+                            'FACTURA',
+                               c.alc_numero
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor
+                            || '-'
+                            || pkg_general.devuelve_pais (c.alc_pais),
+                            'TRANSFERENCIA',
+                               c.alc_gestion
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor,
+                            'OTROS',
+                               c.alc_gestion
+                            || '-'
+                            || TO_CHAR (c.alc_fecha, 'dd/mm/yyyy')
+                            || '-'
+                            || c.alc_proveedor
+                            || '-'
+                            || c.alc_tipo_documento,
+                            '-')
+                         tramite,
+                     '1' cantidad,
+                     pkg_general.patron_declaracion (c.alc_gestion,
+                                                     c.alc_aduana,
+                                                     c.alc_numero)
+                         patron,
+                     pkg_general.items_control (a.ctl_control_id) items,
+                     DECODE (a.ctl_tipo_doc_identidad,
+                             'NIT', TO_CHAR (a.ctl_nit),
+                             TO_CHAR (a.ctl_ci) || ' ' || a.ctl_ci_exp)
+                         identidad_doc,
+                     DECODE (
+                         a.ctl_tipo_doc_identidad,
+                         'NIT',
+                         a.ctl_razon_social,
+                            a.ctl_nombres
+                         || ' '
+                         || a.ctl_appat
+                         || ' '
+                         || a.ctl_apmat)
+                         identidad_nombre,
+                     pkg_general.fecha_levante (c.alc_gestion,
+                                                c.alc_aduana,
+                                                c.alc_numero)
+                         levante
+              FROM   fis_control a, fis_estado b, fis_alcance c
+             WHERE       b.est_num = 0
+                     AND b.est_lstope = 'U'
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.ctl_control_id = a.ctl_control_id
+                     AND b.est_estado IN ('MEMORIZADO', 'REGISTRADO')
+                     AND a.ctl_cod_tipo = 'DIFERIDO'
+                     AND a.ctl_control_id = c.ctl_control_id
+                     AND c.alc_num = 0
+                     AND c.alc_lstope = 'U'
+                     AND a.ctl_cod_gerencia = prm_gerencia
+            UNION ALL
+            SELECT   a.ctl_control_id,
+                     DECODE (
+                         b.est_estado,
+                         'MEMORIZADO',
+                         TO_CHAR (a.ctl_control_id),
+                         a.ctl_cod_gestion
+                         || DECODE (a.ctl_cod_tipo,
+                                    'DIFERIDO', 'CD',
+                                    'POSTERIOR', 'FP',
+                                    'AMPLIATORIA DIFERIDO', 'CD',
+                                    'AMPLIATORIA POSTERIOR', 'FP',
+                                    '-')
+                         || a.ctl_cod_gerencia
+                         || DECODE (
+                                a.ctl_amp_correlativo,
+                                NULL,
+                                '00',
+                                DECODE (LENGTH (a.ctl_amp_correlativo),
+                                        1, '0' || a.ctl_amp_correlativo,
+                                        a.ctl_amp_correlativo))
+                         || DECODE (LENGTH (a.ctl_cod_numero),
+                                    1, '0000' || a.ctl_cod_numero,
+                                    2, '000' || a.ctl_cod_numero,
+                                    3, '00' || a.ctl_cod_numero,
+                                    4, '0' || a.ctl_cod_numero,
+                                    a.ctl_cod_numero))
+                         codigo_control,
+                     DECODE (a.ctl_cod_tipo,
+                             'DIFERIDO',
+                             'CONTROL DIFERIDO',
+                             'POSTERIOR',
+                             'FAP',
+                             'AMPLIATORIA DIFERIDO',
+                             'AMPLIATORIA CONTROL DIFERIDO',
+                             'AMPLIATORIA POSTERIOR',
+                             'AMPLIATORIA FAP',
+                             '-')
+                         tipo_control,
+                     DECODE (b.est_estado,
+                             'REGISTRADO',
+                             TO_CHAR (b.est_fecsys, 'dd/mm/yyyy'),
+                             '-')
+                         fecha_reg,
+                     'TRAMITES',
+                     pkg_general.cantidad_tramites (a.ctl_control_id),
+                     '-' patron,
+                     pkg_general.items_control (a.ctl_control_id) items,
+                     DECODE (a.ctl_tipo_doc_identidad,
+                             'NIT', TO_CHAR (a.ctl_nit),
+                             TO_CHAR (a.ctl_ci) || ' ' || a.ctl_ci_exp)
+                         identidad_doc,
+                     DECODE (
+                         a.ctl_tipo_doc_identidad,
+                         'NIT',
+                         a.ctl_razon_social,
+                            a.ctl_nombres
+                         || ' '
+                         || a.ctl_appat
+                         || ' '
+                         || a.ctl_apmat)
+                         identidad_nombre,
+                     '-' levante
+              FROM   fis_control a, fis_estado b
+             WHERE       b.est_num = 0
+                     AND b.est_lstope = 'U'
+                     AND a.ctl_num = 0
+                     AND a.ctl_lstope = 'U'
+                     AND b.ctl_control_id = a.ctl_control_id
+                     AND b.est_estado IN ('MEMORIZADO', 'REGISTRADO')
+                     AND a.ctl_cod_tipo = 'POSTERIOR'
+                     AND a.ctl_cod_gerencia = prm_gerencia
+            ORDER BY   3 DESC, 2 DESC;
+
+        RETURN 'OK';
+    END;
+
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
     IS
