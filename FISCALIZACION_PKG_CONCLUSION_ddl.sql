@@ -1,6 +1,6 @@
 CREATE OR REPLACE 
 PACKAGE pkg_conclusion
-/* Formatted on 27-mar.-2017 16:04:24 (QP5 v5.126) */
+/* Formatted on 06/10/2017 16:01:08 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
@@ -70,7 +70,9 @@ IS
                                  prm_fecha_vc              VARCHAR2,
                                  prm_tipo_rd               VARCHAR2,
                                  prm_gerencia_legal        VARCHAR2,
-                                 prm_tipo_grabado          VARCHAR2)
+                                 prm_tipo_grabado          VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION devuelve_con_resdeter (prm_codigo IN VARCHAR2)
@@ -123,7 +125,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_conclusion
-/* Formatted on 3-may.-2017 22:32:01 (QP5 v5.126) */
+/* Formatted on 06/10/2017 16:01:14 (QP5 v5.126) */
 IS
     FUNCTION devuelve_con_autoinicial (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -550,7 +552,9 @@ IS
                                                          a.cas_ci_remision_gr,
                                                          a.cas_fecha_ci,
                                                          prm_numero_rs,
-                                                         TO_DATE (prm_fecha_rs,'dd/mm/yyyy'),
+                                                         TO_DATE (
+                                                             prm_fecha_rs,
+                                                             'dd/mm/yyyy'),
                                                          0,
                                                          'U',
                                                          prm_usuario,
@@ -954,7 +958,9 @@ IS
                      cvc_numero_vc,
                      TO_CHAR (cvc_fecha_vc, 'dd/mm/yyyy'),
                      a.cvc_tipo_rd,
-                     a.cvc_gerencia_legal
+                     a.cvc_gerencia_legal,
+                     a.cvc_nombre_archivo,
+                     a.cvc_ubicacion_archivo
               FROM   fis_con_viscargo a
              WHERE       a.ctl_control_id = prm_codigo
                      AND a.cvc_num = 0
@@ -982,7 +988,9 @@ IS
                                  prm_fecha_vc              VARCHAR2,
                                  prm_tipo_rd               VARCHAR2,
                                  prm_gerencia_legal        VARCHAR2,
-                                 prm_tipo_grabado          VARCHAR2)
+                                 prm_tipo_grabado          VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2
     IS
         res           VARCHAR2 (300) := 0;
@@ -1164,7 +1172,9 @@ IS
                                                                                       cvc_numero_vc,
                                                                                       cvc_fecha_vc,
                                                                                       cvc_tipo_rd,
-                                                                                      cvc_gerencia_legal)
+                                                                                      cvc_gerencia_legal,
+                                                                                      cvc_nombre_archivo,
+                                                                                      cvc_ubicacion_archivo)
                                                           VALUES   (prm_id,
                                                                     prm_tipo_notificacion,
                                                                     TO_DATE (
@@ -1202,7 +1212,9 @@ IS
                                                                         prm_fecha_vc,
                                                                         'dd/mm/yyyy'),
                                                                     prm_tipo_rd,
-                                                                    prm_gerencia_legal);
+                                                                    prm_gerencia_legal,
+                                                                    prm_nombre_archivo,
+                                                                    prm_ubicacion_archivo);
 
                                                         IF prm_tipo_grabado =
                                                                'CONCLUIR'
@@ -1235,7 +1247,7 @@ IS
                                                         END IF;
 
                                                         COMMIT;
-                                                        RETURN 'CORRECTOe registr&oacute; correctamente la Vista de Cargo';
+                                                        RETURN 'CORRECTOSe registr&oacute; correctamente la Vista de Cargo';
                                                     ELSE
                                                         SELECT   COUNT (1)
                                                           INTO   existe
@@ -1272,7 +1284,9 @@ IS
                                                                                       cvc_numero_vc,
                                                                                       cvc_fecha_vc,
                                                                                       cvc_tipo_rd,
-                                                                                      cvc_gerencia_legal)
+                                                                                      cvc_gerencia_legal,
+                                                                                      cvc_nombre_archivo,
+                                                                                      cvc_ubicacion_archivo)
                                                           VALUES   (prm_id,
                                                                     prm_tipo_notificacion,
                                                                     TO_DATE (
@@ -1310,7 +1324,9 @@ IS
                                                                         prm_fecha_vc,
                                                                         'dd/mm/yyyy'),
                                                                     prm_tipo_rd,
-                                                                    prm_gerencia_legal);
+                                                                    prm_gerencia_legal,
+                                                                    prm_nombre_archivo,
+                                                                    prm_ubicacion_archivo);
 
                                                         IF prm_tipo_grabado =
                                                                'CONCLUIR'
@@ -1397,7 +1413,9 @@ IS
                                                                               cvc_numero_vc,
                                                                               cvc_fecha_vc,
                                                                               cvc_tipo_rd,
-                                                                              cvc_gerencia_legal)
+                                                                              cvc_gerencia_legal,
+                                                                              cvc_nombre_archivo,
+                                                                              cvc_ubicacion_archivo)
                                                     SELECT   prm_id,
                                                              a.cvc_tipo_notificacion,
                                                              a.cvc_fecha_notificacion,
@@ -1421,7 +1439,9 @@ IS
                                                              a.cvc_numero_vc,
                                                              a.cvc_fecha_vc,
                                                              prm_tipo_rd,
-                                                             a.cvc_gerencia_legal
+                                                             a.cvc_gerencia_legal,
+                                                             a.cvc_nombre_archivo,
+                                                             a.cvc_ubicacion_archivo
                                                       FROM   fis_con_viscargo a
                                                      WHERE   ctl_control_id =
                                                                  prm_id

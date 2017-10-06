@@ -1130,7 +1130,15 @@ AS
         RETURN cursortype
     IS
         ct   cursortype;
+        existe varchar2(5);
     BEGIN
+
+        SELECT decode(count(1),0,'NO','SI') into existe
+  FROM fis_fiscalizador a
+  WHERE a.ctl_control_id = prm_codigo
+  and  a.fis_num = 0
+  and a.fis_lstope = 'U';
+
         OPEN ct FOR
             SELECT   a.ctl_control_id codigo,
                      DECODE (
@@ -1257,7 +1265,8 @@ AS
                      DECODE (a.ctl_riesgodelito, 'on', 'SI', 'NO'),
                      DECODE (a.ctl_riesgosubval, 'on', 'SI', 'NO'),
                      DECODE (a.ctl_riesgoclas, 'on', 'SI', 'NO'),
-                     DECODE (a.ctl_riesgocontrab, 'on', 'SI', 'NO')
+                     DECODE (a.ctl_riesgocontrab, 'on', 'SI', 'NO'),
+                     existe tiene_asig
               FROM   fis_control a,
                      fis_estado e,
                      fis_info_notificacion i,
