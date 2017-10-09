@@ -1,16 +1,28 @@
 CREATE OR REPLACE 
 PACKAGE pkg_seguimiento
-/* Formatted on 24-nov.-2016 12:08:08 (QP5 v5.126) */
+/* Formatted on 9-oct.-2017 19:05:21 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
     FUNCTION devuelve_fecha
         RETURN VARCHAR2;
 
-    FUNCTION graba_notificacion (prm_id          VARCHAR2,
+    FUNCTION graba_notificacion (prm_id             VARCHAR2,
+                                 prm_usuario        VARCHAR2,
+                                 prm_fechanot       VARCHAR2,
+                                 prm_tiponot        VARCHAR2,
+                                 prm_obs            VARCHAR2,
+                                 prm_esapoderado    VARCHAR2,
+                                 prm_ci             VARCHAR2,
+                                 prm_ci_exp         VARCHAR2,
+                                 prm_nombres        VARCHAR2,
+                                 prm_appat          VARCHAR2,
+                                 prm_apmat          VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION graba_presentacion (prm_id          VARCHAR2,
                                  prm_usuario     VARCHAR2,
                                  prm_fechanot    VARCHAR2,
-                                 prm_tiponot     VARCHAR2,
                                  prm_obs         VARCHAR2)
         RETURN VARCHAR2;
 
@@ -29,37 +41,37 @@ IS
                                prm_usuario    VARCHAR2)
         RETURN VARCHAR2;
 
-    FUNCTION graba_resultados2 (prm_dui        VARCHAR2,
-                                prm_item       VARCHAR2,
-                                prm_partida    VARCHAR2,
-                                prm_fob        NUMBER,
-                                prm_flete      NUMBER,
-                                prm_seguro     NUMBER,
-                                prm_otros      NUMBER,
-                                prm_cifusd     NUMBER,
-                                prm_cifbob     NUMBER,
-                                prm_contrav    NUMBER,
-                                prm_ilicito    VARCHAR2,
-                                prm_obs        VARCHAR2,
-                                prm_usuario    VARCHAR2,
-                                prm_codigo     VARCHAR2,
+    FUNCTION graba_resultados2 (prm_dui             VARCHAR2,
+                                prm_item            VARCHAR2,
+                                prm_partida         VARCHAR2,
+                                prm_fob             NUMBER,
+                                prm_flete           NUMBER,
+                                prm_seguro          NUMBER,
+                                prm_otros           NUMBER,
+                                prm_cifusd          NUMBER,
+                                prm_cifbob          NUMBER,
+                                prm_contrav         NUMBER,
+                                prm_ilicito         VARCHAR2,
+                                prm_obs             VARCHAR2,
+                                prm_usuario         VARCHAR2,
+                                prm_codigo          VARCHAR2,
                                 prm_contravorden    NUMBER,
                                 prm_idalcance       VARCHAR2)
         RETURN VARCHAR2;
 
-    FUNCTION graba_resultadostram (prm_codigo       VARCHAR2,
-                                   prm_idalcance    VARCHAR2,
-                                   prm_mercancia    VARCHAR2,
-                                   prm_fob          NUMBER,
-                                   prm_flete        NUMBER,
-                                   prm_seguro       NUMBER,
-                                   prm_otros        NUMBER,
-                                   prm_cifusd       NUMBER,
-                                   prm_cifbob       NUMBER,
-                                   prm_cifufv       NUMBER,
-                                   prm_usuario      VARCHAR2,
-                                   prm_ilicito      VARCHAR2,
-                                   prm_contravorden NUMBER)
+    FUNCTION graba_resultadostram (prm_codigo          VARCHAR2,
+                                   prm_idalcance       VARCHAR2,
+                                   prm_mercancia       VARCHAR2,
+                                   prm_fob             NUMBER,
+                                   prm_flete           NUMBER,
+                                   prm_seguro          NUMBER,
+                                   prm_otros           NUMBER,
+                                   prm_cifusd          NUMBER,
+                                   prm_cifbob          NUMBER,
+                                   prm_cifufv          NUMBER,
+                                   prm_usuario         VARCHAR2,
+                                   prm_ilicito         VARCHAR2,
+                                   prm_contravorden    NUMBER)
         RETURN VARCHAR2;
 
     FUNCTION graba_not_conclusion (prm_id          VARCHAR2,
@@ -98,6 +110,9 @@ IS
     FUNCTION devuelve_notificacion (prm_codigo IN VARCHAR2)
         RETURN cursortype;
 
+    FUNCTION devuelve_presentacion (prm_codigo IN VARCHAR2)
+        RETURN cursortype;
+
     FUNCTION devuelve_not_conclusion (prm_codigo IN VARCHAR2)
         RETURN cursortype;
 
@@ -111,7 +126,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_seguimiento
-/* Formatted on 7-jul.-2017 14:48:37 (QP5 v5.126) */
+/* Formatted on 9-oct.-2017 19:30:20 (QP5 v5.126) */
 IS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -123,11 +138,17 @@ IS
         RETURN res;
     END;
 
-    FUNCTION graba_notificacion (prm_id          VARCHAR2,
-                                 prm_usuario     VARCHAR2,
-                                 prm_fechanot    VARCHAR2,
-                                 prm_tiponot     VARCHAR2,
-                                 prm_obs         VARCHAR2)
+    FUNCTION graba_notificacion (prm_id             VARCHAR2,
+                                 prm_usuario        VARCHAR2,
+                                 prm_fechanot       VARCHAR2,
+                                 prm_tiponot        VARCHAR2,
+                                 prm_obs            VARCHAR2,
+                                 prm_esapoderado    VARCHAR2,
+                                 prm_ci             VARCHAR2,
+                                 prm_ci_exp         VARCHAR2,
+                                 prm_nombres        VARCHAR2,
+                                 prm_appat          VARCHAR2,
+                                 prm_apmat          VARCHAR2)
         RETURN VARCHAR2
     IS
         res         VARCHAR2 (300) := 0;
@@ -165,7 +186,13 @@ IS
                                                   not_num,
                                                   not_lstope,
                                                   not_usuario,
-                                                  not_fecsys)
+                                                  not_fecsys,
+                                                  not_esapoderado,
+                                                  not_ci,
+                                                  not_ci_exp,
+                                                  not_nombres,
+                                                  not_appat,
+                                                  not_apmat)
                       VALUES   (prm_id,
                                 TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
                                 prm_tiponot,
@@ -173,7 +200,13 @@ IS
                                 0,
                                 'U',
                                 prm_usuario,
-                                SYSDATE);
+                                SYSDATE,
+                                prm_esapoderado,
+                                prm_ci,
+                                prm_ci_exp,
+                                prm_nombres,
+                                prm_appat,
+                                prm_apmat);
 
                     COMMIT;
                     RETURN 'CORRECTOSe registr&oacute; correctamente la notificaci&oacute;n';
@@ -216,6 +249,93 @@ IS
                    || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
     END;
 
+    FUNCTION graba_presentacion (prm_id          VARCHAR2,
+                                 prm_usuario     VARCHAR2,
+                                 prm_fechanot    VARCHAR2,
+                                 prm_obs         VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res         VARCHAR2 (300) := 0;
+        existe      NUMBER;
+        v_gestion   VARCHAR2 (4);
+        v_numero    NUMBER;
+        v_fecreg    DATE;
+    BEGIN
+        IF TO_DATE (prm_fechanot, 'dd/mm/yyyy') > TRUNC (SYSDATE)
+        THEN
+            RETURN 'La fecha de presentaci&oacute;n no puede ser mayor a la actual';
+        ELSE
+            v_fecreg :=
+                TO_DATE (pkg_general.devuelve_fecha_registro (prm_id),
+                         'dd/mm/yyyy');
+
+            IF v_fecreg > TO_DATE (prm_fechanot, 'dd/mm/yyyy')
+            THEN
+                RETURN 'La fecha de presentaci&oacute;n no puede ser menor a la fecha de registro '
+                       || TO_CHAR (v_fecreg, 'dd/mm/yyyy');
+            ELSE
+                SELECT   COUNT (1)
+                  INTO   existe
+                  FROM   fis_presentacion a
+                 WHERE       a.ctl_control_id = prm_id
+                         AND a.pre_num = 0
+                         AND a.pre_lstope = 'U';
+
+                IF existe = 0
+                THEN
+                    INSERT INTO fis_presentacion (ctl_control_id,
+                                                  pre_fecha_presentacion,
+                                                  pre_obs_presentacion,
+                                                  pre_num,
+                                                  pre_lstope,
+                                                  pre_usuario,
+                                                  pre_fecsys)
+                      VALUES   (prm_id,
+                                TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
+                                prm_obs,
+                                0,
+                                'U',
+                                prm_usuario,
+                                SYSDATE);
+
+                    COMMIT;
+                    RETURN 'CORRECTOSe registr&oacute; correctamente la presentaci&oacute;n';
+                ELSE
+                    SELECT   COUNT (1)
+                      INTO   existe
+                      FROM   fis_presentacion a
+                     WHERE   a.ctl_control_id = prm_id;
+
+                    UPDATE   fis_presentacion
+                       SET   pre_num = existe
+                     WHERE   ctl_control_id = prm_id AND pre_num = 0;
+
+                    INSERT INTO fis_presentacion (ctl_control_id,
+                                                  pre_fecha_presentacion,
+                                                  pre_obs_presentacion,
+                                                  pre_num,
+                                                  pre_lstope,
+                                                  pre_usuario,
+                                                  pre_fecsys)
+                      VALUES   (prm_id,
+                                TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
+                                prm_obs,
+                                0,
+                                'U',
+                                prm_usuario,
+                                SYSDATE);
+
+                    RETURN 'CORRECTOSe modific&oacute; correctamente la presentaci&oacute;n';
+                END IF;
+            END IF;
+        END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
 
     FUNCTION graba_resultados (prm_dui        VARCHAR2,
                                prm_item       VARCHAR2,
@@ -2821,11 +2941,38 @@ IS
                      a.not_num,
                      a.not_lstope,
                      a.not_usuario,
-                     a.not_fecsys
+                     a.not_fecsys,
+                     a.not_esapoderado,
+                     a.not_ci,
+                     a.not_ci_exp,
+                     a.not_nombres,
+                     a.not_appat,
+                     a.not_apmat
               FROM   fis_notificacion a
              WHERE       a.ctl_control_id = prm_codigo
                      AND a.not_num = 0
                      AND a.not_lstope = 'U';
+
+        RETURN ct;
+    END;
+
+    FUNCTION devuelve_presentacion (prm_codigo IN VARCHAR2)
+        RETURN cursortype
+    IS
+        ct   cursortype;
+    BEGIN
+        OPEN ct FOR
+            SELECT   a.ctl_control_id,
+                     TO_CHAR (a.pre_fecha_presentacion, 'dd/mm/yyyy'),
+                     a.pre_obs_presentacion,
+                     a.pre_num,
+                     a.pre_lstope,
+                     a.pre_usuario,
+                     a.pre_fecsys
+              FROM   fis_presentacion a
+             WHERE       a.ctl_control_id = prm_codigo
+                     AND a.pre_num = 0
+                     AND a.pre_lstope = 'U';
 
         RETURN ct;
     END;
