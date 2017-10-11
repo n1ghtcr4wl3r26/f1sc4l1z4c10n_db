@@ -1,6 +1,6 @@
 CREATE OR REPLACE 
 PACKAGE pkg_general
-/* Formatted on 05/10/2017 15:25:50 (QP5 v5.126) */
+/* Formatted on 10-oct.-2017 12:16:04 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
@@ -25,6 +25,9 @@ IS
 
     FUNCTION items_control (prm_control IN VARCHAR2)
         RETURN VARCHAR2;
+
+    FUNCTION fecha_levante (prm_control IN VARCHAR2)
+        RETURN date;
 
     FUNCTION fecha_levante (prm_sadregyear   IN VARCHAR2,
                             prm_keycuo          VARCHAR2,
@@ -161,59 +164,108 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 05/10/2017 15:25:57 (QP5 v5.126) */
+/* Formatted on 10-oct.-2017 12:25:10 (QP5 v5.126) */
 AS
     FUNCTION plazo_dias_orden (prm_control IN VARCHAR2)
         RETURN VARCHAR2
     IS
-        res   VARCHAR2 (30);
-        plazo  number;
-        fecreg date;
-        dif number;
+        res              VARCHAR2 (30);
+        plazo            NUMBER;
+        fecreg           DATE;
+        dif              NUMBER;
+        tipo             VARCHAR2 (50);
+        fecha_levante    DATE;
+        fecha_registro   DATE;
     BEGIN
+        SELECT   a.ctl_cod_tipo
+          INTO   tipo
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_control
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
 
-    SELECT   a.est_fecsys into fecreg
-   FROM fis_estado a
-     where a.ctl_control_id = prm_control
-     and a.est_estado  = 'REGISTRADO';
+        IF tipo = 'DIFERIDO'
+        THEN
+            SELECT   a.est_fecsys
+              INTO   fecha_registro
+              FROM   fis_estado a
+             WHERE       a.est_estado = 'REGISTRADO'
+                     AND a.est_lstope = 'U'
+                     AND a.ctl_control_id = prm_control;
 
-   if  fecreg is null then
+            IF fecha_registro IS NULL
+            THEN
+                RETURN '-';
+            ELSE
+                fecha_levante := pkg_general.fecha_levante(prm_control);
+                IF fecha_levante IS NULL
+                THEN
 
-   return '-';
+                    IF fecha_registro > fecha_levante
+                    THEN
+                        RETURN 'SIN MERCANCIA';
 
-   else
+                    ELSE
+                        RETURN 'CON MERCANCIA';
+                    END IF;
+                ELSE
+                    RETURN '-';
+                END IF;
 
-         SELECT b.inn_plazo_conclusion into plazo
-           FROM fis_info_notificacion b
-             where b.ctl_control_id = prm_control
-             and b.inn_num = 0
-             and b.inn_lstope = 'U';
+            END IF;
+        ELSE
+            IF tipo = 'POSTERIOR'
+            THEN
+                SELECT   a.est_fecsys
+                  INTO   fecreg
+                  FROM   fis_estado a
+                 WHERE       a.ctl_control_id = prm_control
+                         AND a.est_estado = 'REGISTRADO'
+                         AND a.est_lstope = 'U';
 
-
-        if plazo is null then
-            return '-';
-
-        else
-            dif := trunc(sysdate) - trunc(fecreg) + plazo -200;
-
-
-            if dif > 0 then
-                return '<span class="label label-danger">Fuera de Plazo por '||dif||' d&iacute;as</span>';
-            else
-
-                if dif*(-1) < 10 then
-                    return '<span class="label label-warning">En Plazo, '||dif*(-1)||' d&iacute;as restantes</span>';
-                else
-                    return '<span class="label label-success">En Plazo, '||dif*(-1)||' d&iacute;as restantes</span>';
-                end if;
-            end if;
-
-        end if;
-
-   end if;
+                IF fecreg IS NULL
+                THEN
+                    RETURN '-';
+                ELSE
+                    SELECT   b.inn_plazo_conclusion
+                      INTO   plazo
+                      FROM   fis_info_notificacion b
+                     WHERE       b.ctl_control_id = prm_control
+                             AND b.inn_num = 0
+                             AND b.inn_lstope = 'U';
 
 
-   EXCEPTION
+                    IF plazo IS NULL
+                    THEN
+                        RETURN '-';
+                    ELSE
+                        dif := TRUNC (SYSDATE) - TRUNC (fecreg) + plazo - 200;
+
+
+                        IF dif > 0
+                        THEN
+                            RETURN '<span class="label label-danger">Fuera de Plazo por '
+                                   || dif
+                                   || ' d&iacute;as</span>';
+                        ELSE
+                            IF dif * (-1) < 10
+                            THEN
+                                RETURN '<span class="label label-warning">En Plazo, '
+                                       || dif * (-1)
+                                       || ' d&iacute;as restantes</span>';
+                            ELSE
+                                RETURN '<span class="label label-success">En Plazo, '
+                                       || dif * (-1)
+                                       || ' d&iacute;as restantes</span>';
+                            END IF;
+                        END IF;
+                    END IF;
+                END IF;
+            ELSE
+                RETURN '-';
+            END IF;
+        END IF;
+    EXCEPTION
         WHEN OTHERS
         THEN
             RETURN '-';
@@ -312,26 +364,28 @@ AS
         RETURN VARCHAR2
     IS
         res   VARCHAR2 (30);
-        aux NUMBER;
+        aux   NUMBER;
     BEGIN
-        SELECT   count(1)
+        SELECT   COUNT (1)
           INTO   aux
           FROM   fis_estado a
          WHERE       a.ctl_control_id = prm_control
                  AND a.est_estado = 'REGISTRADO'
                  AND est_lstope = 'U';
 
-        if aux = 0 then
-        return '-';
-    else
-        SELECT   NVL (TO_CHAR (MIN (a.est_fecsys), 'dd/mm/yyyy'), '-')
-          INTO   res
-          FROM   fis_estado a
-         WHERE       a.ctl_control_id = prm_control
-                 AND a.est_estado = 'REGISTRADO'
-                 AND est_lstope = 'U';
-                 return res;
-                 end if;
+        IF aux = 0
+        THEN
+            RETURN '-';
+        ELSE
+            SELECT   NVL (TO_CHAR (MIN (a.est_fecsys), 'dd/mm/yyyy'), '-')
+              INTO   res
+              FROM   fis_estado a
+             WHERE       a.ctl_control_id = prm_control
+                     AND a.est_estado = 'REGISTRADO'
+                     AND est_lstope = 'U';
+
+            RETURN res;
+        END IF;
     EXCEPTION
         WHEN OTHERS
         THEN
@@ -443,6 +497,70 @@ AS
                            AND g.sad_reg_serial = 'C'
                            AND g.sad_reg_nber = prm_sadregnber
                            AND g.sad_num = 0) tbl;
+
+        RETURN res;
+    END;
+
+    FUNCTION fecha_levante (prm_control IN VARCHAR2)
+        RETURN DATE
+    IS
+        res   DATE;
+    BEGIN
+        SELECT   TO_DATE(levante,'DD/MM/YYYY HH24:MI')
+          INTO   res
+          FROM   (SELECT      TO_CHAR (n.upd_dat, 'dd/mm/yyyy')
+                           || ' '
+                           || n.upd_hor
+                               levante
+                    FROM   ops$asy.sad_spy n,
+                           ops$asy.sad_gen g,
+                           fis_alcance a
+                   WHERE       n.key_year = g.key_year
+                           AND n.key_cuo = g.key_cuo
+                           AND n.key_dec = g.key_dec
+                           AND g.key_dec IS NOT NULL
+                           AND n.key_nber = g.key_nber
+                           AND ( (    n.spy_sta = '6'
+                                  AND n.spy_act = '9'
+                                  AND n.sad_clr = 0)
+                                OR (    n.spy_sta = '10'
+                                    AND n.spy_act = '24'
+                                    AND n.sad_clr = 0))
+                           AND g.sad_reg_year = a.alc_gestion
+                           AND g.key_cuo = a.alc_aduana
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = a.alc_numero
+                           AND g.sad_num = 0
+                           AND a.ctl_control_id = prm_control
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U'
+                  UNION ALL
+                  SELECT      TO_CHAR (n.upd_dat, 'dd/mm/yyyy')
+                           || ' '
+                           || n.upd_hor
+                               levante
+                    FROM   ops$asy.sad_spy n,
+                           ops$asy.sad_gen g,
+                           fis_alcance a
+                   WHERE       n.key_year = g.key_year
+                           AND n.key_cuo = g.key_cuo
+                           AND g.key_dec IS NULL
+                           AND n.key_dec IS NULL
+                           AND n.key_nber = g.key_nber
+                           AND ( (    n.spy_sta = '6'
+                                  AND n.spy_act = '9'
+                                  AND n.sad_clr = 0)
+                                OR (    n.spy_sta = '10'
+                                    AND n.spy_act = '24'
+                                    AND n.sad_clr = 0))
+                           AND g.sad_reg_year = a.alc_gestion
+                           AND g.key_cuo = a.alc_aduana
+                           AND g.sad_reg_serial = 'C'
+                           AND g.sad_reg_nber = a.alc_numero
+                           AND g.sad_num = 0
+                           AND a.ctl_control_id = prm_control
+                           AND a.alc_num = 0
+                           AND a.alc_lstope = 'U') tbl;
 
         RETURN res;
     END;
@@ -1129,15 +1247,15 @@ AS
     FUNCTION devuelve_datos_control (prm_codigo IN VARCHAR2)
         RETURN cursortype
     IS
-        ct   cursortype;
-        existe varchar2(5);
+        ct       cursortype;
+        existe   VARCHAR2 (5);
     BEGIN
-
-        SELECT decode(count(1),0,'NO','SI') into existe
-  FROM fis_fiscalizador a
-  WHERE a.ctl_control_id = prm_codigo
-  and  a.fis_num = 0
-  and a.fis_lstope = 'U';
+        SELECT   DECODE (COUNT (1), 0, 'NO', 'SI')
+          INTO   existe
+          FROM   fis_fiscalizador a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.fis_num = 0
+                 AND a.fis_lstope = 'U';
 
         OPEN ct FOR
             SELECT   a.ctl_control_id codigo,

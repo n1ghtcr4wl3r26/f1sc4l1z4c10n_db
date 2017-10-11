@@ -126,7 +126,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_seguimiento
-/* Formatted on 9-oct.-2017 19:30:20 (QP5 v5.126) */
+/* Formatted on 10-oct.-2017 11:46:16 (QP5 v5.126) */
 IS
     FUNCTION devuelve_fecha
         RETURN VARCHAR2
@@ -151,11 +151,18 @@ IS
                                  prm_apmat          VARCHAR2)
         RETURN VARCHAR2
     IS
-        res         VARCHAR2 (300) := 0;
-        existe      NUMBER;
-        v_gestion   VARCHAR2 (4);
-        v_numero    NUMBER;
-        v_fecreg    DATE;
+        res             VARCHAR2 (300) := 0;
+        existe          NUMBER;
+        v_gestion       VARCHAR2 (4);
+        v_numero        NUMBER;
+        v_fecreg        DATE;
+
+        v_esapoderado   VARCHAR2 (5);
+        v_ci            VARCHAR2 (30);
+        v_ci_exp        VARCHAR2 (5);
+        v_nombres       VARCHAR2 (30);
+        v_appat         VARCHAR2 (30);
+        v_apmat         VARCHAR2 (30);
     BEGIN
         IF TO_DATE (prm_fechanot, 'dd/mm/yyyy') > TRUNC (SYSDATE)
         THEN
@@ -170,6 +177,23 @@ IS
                 RETURN 'La fecha de notificaci&oacute;n no puede ser menor a la fecha de registro '
                        || TO_CHAR (v_fecreg, 'dd/mm/yyyy');
             ELSE
+                IF prm_tiponot <> 'PERSONAL'
+                THEN
+                    v_esapoderado := 'NO';
+                ELSE
+                    IF prm_tiponot = 'PERSONAL' AND prm_esapoderado = 'SI'
+                    THEN
+                        v_esapoderado := 'SI';
+                        v_ci := prm_ci;
+                        v_ci_exp := prm_ci_exp;
+                        v_nombres := prm_nombres;
+                        v_appat := prm_appat;
+                        v_apmat := prm_apmat;
+                    ELSE
+                        v_esapoderado := 'NO';
+                    END IF;
+                END IF;
+
                 SELECT   COUNT (1)
                   INTO   existe
                   FROM   fis_notificacion a
@@ -196,17 +220,17 @@ IS
                       VALUES   (prm_id,
                                 TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
                                 prm_tiponot,
-                                prm_obs,
+                                UPPER (prm_obs),
                                 0,
                                 'U',
                                 prm_usuario,
                                 SYSDATE,
-                                prm_esapoderado,
-                                prm_ci,
-                                prm_ci_exp,
-                                prm_nombres,
-                                prm_appat,
-                                prm_apmat);
+                                v_esapoderado,
+                                v_ci,
+                                v_ci_exp,
+                                UPPER (v_nombres),
+                                UPPER (v_appat),
+                                UPPER (v_apmat));
 
                     COMMIT;
                     RETURN 'CORRECTOSe registr&oacute; correctamente la notificaci&oacute;n';
@@ -227,15 +251,27 @@ IS
                                                   not_num,
                                                   not_lstope,
                                                   not_usuario,
-                                                  not_fecsys)
+                                                  not_fecsys,
+                                                  not_esapoderado,
+                                                  not_ci,
+                                                  not_ci_exp,
+                                                  not_nombres,
+                                                  not_appat,
+                                                  not_apmat)
                       VALUES   (prm_id,
                                 TO_DATE (prm_fechanot, 'dd/mm/yyyy'),
                                 prm_tiponot,
-                                prm_obs,
+                                UPPER (prm_obs),
                                 0,
                                 'U',
                                 prm_usuario,
-                                SYSDATE);
+                                SYSDATE,
+                                v_esapoderado,
+                                v_ci,
+                                v_ci_exp,
+                                UPPER (v_nombres),
+                                UPPER (v_appat),
+                                UPPER (v_apmat));
 
                     RETURN 'CORRECTOSe modific&oacute; correctamente la notificaci&oacute;n';
                 END IF;
