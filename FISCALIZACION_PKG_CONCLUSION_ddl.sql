@@ -24,7 +24,9 @@ IS
                                     prm_numero_informe          VARCHAR2,
                                     prm_fecha_informe           VARCHAR2,
                                     prm_gerencia_legal          VARCHAR2,
-                                    prm_tipo_grabado            VARCHAR2)
+                                    prm_tipo_grabado            VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION devuelve_con_resadmin (prm_codigo IN VARCHAR2)
@@ -45,7 +47,9 @@ IS
                                  prm_rup_aduana            VARCHAR2,
                                  prm_rup_numero            VARCHAR2,
                                  prm_gerencia_legal        VARCHAR2,
-                                 prm_tipo_grabado          VARCHAR2)
+                                 prm_tipo_grabado          VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION devuelve_con_viscargo (prm_codigo IN VARCHAR2)
@@ -84,7 +88,9 @@ IS
                                  prm_usuario               VARCHAR2,
                                  prm_numero_informe        VARCHAR2,
                                  prm_fecha_informe         VARCHAR2,
-                                 prm_tipo_grabado          VARCHAR2)
+                                 prm_tipo_grabado          VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION devuelve_con_actainter (prm_codigo IN VARCHAR2)
@@ -111,7 +117,9 @@ IS
                                   prm_tipo_not_ai             VARCHAR2,
                                   prm_resultado_des           VARCHAR2,
                                   prm_tipo_resolucion         VARCHAR2,
-                                  prm_tipo_grabado            VARCHAR2)
+                                  prm_tipo_grabado            VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2;
 
     FUNCTION devuelve_paneles (prm_codigo IN VARCHAR2)
@@ -125,7 +133,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_conclusion
-/* Formatted on 06/10/2017 16:01:14 (QP5 v5.126) */
+/* Formatted on 11/10/2017 19:22:28 (QP5 v5.126) */
 IS
     FUNCTION devuelve_con_autoinicial (prm_codigo IN VARCHAR2)
         RETURN cursortype
@@ -151,7 +159,9 @@ IS
                      TO_CHAR (a.cas_fecsys, 'dd/mm/yyyy'),
                      a.cas_numero_informe,
                      TO_CHAR (a.cas_fecha_informe, 'dd/mm/yyyy'),
-                     a.cas_gerencia_legal
+                     a.cas_gerencia_legal,
+                     a.cas_nombre_archivo,
+                     a.cas_ubicacion_archivo
               FROM   fis_con_autoinicial a
              WHERE       a.ctl_control_id = prm_codigo
                      AND a.cas_num = 0
@@ -176,7 +186,9 @@ IS
                                     prm_numero_informe          VARCHAR2,
                                     prm_fecha_informe           VARCHAR2,
                                     prm_gerencia_legal          VARCHAR2,
-                                    prm_tipo_grabado            VARCHAR2)
+                                    prm_tipo_grabado            VARCHAR2,
+                                    prm_nombre_archivo          VARCHAR2,
+                                    prm_ubicacion_archivo       VARCHAR2)
         RETURN VARCHAR2
     IS
         res           VARCHAR2 (300) := 0;
@@ -339,7 +351,9 @@ IS
                                                                                      cas_fecsys,
                                                                                      cas_numero_informe,
                                                                                      cas_fecha_informe,
-                                                                                     cas_gerencia_legal)
+                                                                                     cas_gerencia_legal,
+                                                                                     cas_nombre_archivo,
+                                                                                     cas_ubicacion_archivo)
                                                       VALUES   (prm_id,
                                                                 prm_numero_aisc,
                                                                 TO_DATE (
@@ -368,7 +382,9 @@ IS
                                                                 TO_DATE (
                                                                     prm_fecha_informe,
                                                                     'dd/mm/yyyy'),
-                                                                prm_gerencia_legal);
+                                                                prm_gerencia_legal,
+                                                                prm_nombre_archivo,
+                                                                prm_ubicacion_archivo);
 
                                                     IF prm_tipo_grabado =
                                                            'CONCLUIR'
@@ -431,7 +447,9 @@ IS
                                                                                      cas_fecsys,
                                                                                      cas_numero_informe,
                                                                                      cas_fecha_informe,
-                                                                                     cas_gerencia_legal)
+                                                                                     cas_gerencia_legal,
+                                                                                     cas_nombre_archivo,
+                                                                                     cas_ubicacion_archivo)
                                                       VALUES   (prm_id,
                                                                 prm_numero_aisc,
                                                                 TO_DATE (
@@ -460,7 +478,9 @@ IS
                                                                 TO_DATE (
                                                                     prm_fecha_informe,
                                                                     'dd/mm/yyyy'),
-                                                                prm_gerencia_legal);
+                                                                prm_gerencia_legal,
+                                                                prm_nombre_archivo,
+                                                                prm_ubicacion_archivo);
 
                                                     IF prm_tipo_grabado =
                                                            'CONCLUIR'
@@ -540,7 +560,9 @@ IS
                                                                              cas_fecsys,
                                                                              cas_numero_informe,
                                                                              cas_fecha_informe,
-                                                                             cas_gerencia_legal)
+                                                                             cas_gerencia_legal,
+                                                                             cas_nombre_archivo,
+                                                                             cas_ubicacion_archivo)
                                                 SELECT   prm_id,
                                                          a.cas_numero_aisc,
                                                          a.cas_fecha_notificacion,
@@ -561,7 +583,9 @@ IS
                                                          SYSDATE,
                                                          a.cas_numero_informe,
                                                          a.cas_fecha_informe,
-                                                         a.cas_gerencia_legal
+                                                         a.cas_gerencia_legal,
+                                                         a.cas_nombre_archivo,
+                                                         a.cas_ubicacion_archivo
                                                   FROM   fis_con_autoinicial a
                                                  WHERE   ctl_control_id =
                                                              prm_id
@@ -614,7 +638,9 @@ IS
                      a.cra_rup_gestion,
                      a.cra_rup_aduana,
                      a.cra_rup_numero,
-                     a.cra_gerencia_legal
+                     a.cra_gerencia_legal,
+                     a.cra_nombre_archivo,
+                     a.cra_ubicacion_archivo
               FROM   fis_con_resadmin a
              WHERE       a.ctl_control_id = prm_codigo
                      AND a.cra_num = 0
@@ -638,7 +664,9 @@ IS
                                  prm_rup_aduana            VARCHAR2,
                                  prm_rup_numero            VARCHAR2,
                                  prm_gerencia_legal        VARCHAR2,
-                                 prm_tipo_grabado          VARCHAR2)
+                                 prm_tipo_grabado          VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2
     IS
         res           VARCHAR2 (300) := 0;
@@ -774,7 +802,9 @@ IS
                                                                       cra_rup_gestion,
                                                                       cra_rup_aduana,
                                                                       cra_rup_numero,
-                                                                      cra_gerencia_legal)
+                                                                      cra_gerencia_legal,
+                                                                      cra_nombre_archivo,
+                                                                      cra_ubicacion_archivo)
                                           VALUES   (prm_id,
                                                     TO_DATE (
                                                         prm_fecha_pago_cuini,
@@ -799,7 +829,9 @@ IS
                                                     prm_rup_gestion,
                                                     prm_rup_aduana,
                                                     prm_rup_numero,
-                                                    prm_gerencia_legal);
+                                                    prm_gerencia_legal,
+                                                    prm_nombre_archivo,
+                                                    prm_ubicacion_archivo);
 
                                         IF prm_tipo_grabado = 'CONCLUIR'
                                         THEN
@@ -857,7 +889,9 @@ IS
                                                                       cra_rup_gestion,
                                                                       cra_rup_aduana,
                                                                       cra_rup_numero,
-                                                                      cra_gerencia_legal)
+                                                                      cra_gerencia_legal,
+                                                                      cra_nombre_archivo,
+                                                                      cra_ubicacion_archivo)
                                           VALUES   (prm_id,
                                                     TO_DATE (
                                                         prm_fecha_pago_cuini,
@@ -882,7 +916,9 @@ IS
                                                     prm_rup_gestion,
                                                     prm_rup_aduana,
                                                     prm_rup_numero,
-                                                    prm_gerencia_legal);
+                                                    prm_gerencia_legal,
+                                                    prm_nombre_archivo,
+                                                    prm_ubicacion_archivo);
 
                                         IF prm_tipo_grabado = 'CONCLUIR'
                                         THEN
@@ -1486,7 +1522,9 @@ IS
                      crd_usuario,
                      TO_CHAR (a.crd_fecsys, 'dd/mm/yyyy'),
                      crd_numero_informe,
-                     TO_CHAR (crd_fecha_informe, 'dd/mm/yyyy')
+                     TO_CHAR (crd_fecha_informe, 'dd/mm/yyyy'),
+                     crd_nombre_archivo,
+                     crd_ubicacion_archivo
               FROM   fis_con_resdeter a
              WHERE       a.ctl_control_id = prm_codigo
                      AND a.crd_num = 0
@@ -1501,7 +1539,9 @@ IS
                                  prm_usuario               VARCHAR2,
                                  prm_numero_informe        VARCHAR2,
                                  prm_fecha_informe         VARCHAR2,
-                                 prm_tipo_grabado          VARCHAR2)
+                                 prm_tipo_grabado          VARCHAR2,
+                                 prm_nombre_archivo        VARCHAR2,
+                                 prm_ubicacion_archivo     VARCHAR2)
         RETURN VARCHAR2
     IS
         res           VARCHAR2 (300) := 0;
@@ -1616,7 +1656,9 @@ IS
                                                               crd_usuario,
                                                               crd_fecsys,
                                                               crd_numero_informe,
-                                                              crd_fecha_informe)
+                                                              crd_fecha_informe,
+                                                              crd_nombre_archivo,
+                                                              crd_ubicacion_archivo)
                                   VALUES   (prm_id,
                                             prm_rd_final,
                                             TO_DATE (prm_fecha_not_rd_final,
@@ -1627,7 +1669,9 @@ IS
                                             SYSDATE,
                                             prm_numero_informe,
                                             TO_DATE (prm_fecha_informe,
-                                                     'dd/mm/yyyy'));
+                                                     'dd/mm/yyyy'),
+                                            prm_nombre_archivo,
+                                            prm_ubicacion_archivo);
 
                                 IF prm_tipo_grabado = 'CONCLUIR'
                                 THEN
@@ -1675,7 +1719,9 @@ IS
                                                               crd_usuario,
                                                               crd_fecsys,
                                                               crd_numero_informe,
-                                                              crd_fecha_informe)
+                                                              crd_fecha_informe,
+                                                              crd_nombre_archivo,
+                                                              crd_ubicacion_archivo)
                                   VALUES   (prm_id,
                                             prm_rd_final,
                                             TO_DATE (prm_fecha_not_rd_final,
@@ -1686,7 +1732,9 @@ IS
                                             SYSDATE,
                                             prm_numero_informe,
                                             TO_DATE (prm_fecha_informe,
-                                                     'dd/mm/yyyy'));
+                                                     'dd/mm/yyyy'),
+                                            prm_nombre_archivo,
+                                            prm_ubicacion_archivo);
 
                                 IF prm_tipo_grabado = 'CONCLUIR'
                                 THEN
@@ -1761,7 +1809,9 @@ IS
                      TO_CHAR (a.cai_fecha_not_ai, 'dd/mm/yyyy'),
                      cai_tipo_not_ai,
                      cai_resultado_des,
-                     cai_tipo_resolucion
+                     cai_tipo_resolucion,
+                     cai_nombre_archivo,
+                     cai_ubicacion_archivo
               FROM   fis_con_actainter a
              WHERE       a.ctl_control_id = prm_codigo
                      AND a.cai_num = 0
@@ -1791,7 +1841,9 @@ IS
                                   prm_tipo_not_ai             VARCHAR2,
                                   prm_resultado_des           VARCHAR2,
                                   prm_tipo_resolucion         VARCHAR2,
-                                  prm_tipo_grabado            VARCHAR2)
+                                  prm_tipo_grabado            VARCHAR2,
+                                  prm_nombre_archivo          VARCHAR2,
+                                  prm_ubicacion_archivo       VARCHAR2)
         RETURN VARCHAR2
     IS
         res           VARCHAR2 (300) := 0;
@@ -1976,7 +2028,9 @@ IS
                                                                                        cai_fecha_not_ai,
                                                                                        cai_tipo_not_ai,
                                                                                        cai_resultado_des,
-                                                                                       cai_tipo_resolucion)
+                                                                                       cai_tipo_resolucion,
+                                                                                       cai_nombre_archivo,
+                                                                                       cai_ubicacion_archivo)
                                                           VALUES   (prm_id,
                                                                     prm_acta_interv,
                                                                     TO_DATE (
@@ -2016,7 +2070,9 @@ IS
                                                                         'dd/mm/yyyy'),
                                                                     prm_tipo_not_ai,
                                                                     prm_resultado_des,
-                                                                    prm_tipo_resolucion);
+                                                                    prm_tipo_resolucion,
+                                                                    prm_nombre_archivo,
+                                                                    prm_ubicacion_archivo);
 
                                                         IF prm_tipo_grabado =
                                                                'CONCLUIR'
@@ -2088,7 +2144,9 @@ IS
                                                                                        cai_fecha_not_ai,
                                                                                        cai_tipo_not_ai,
                                                                                        cai_resultado_des,
-                                                                                       cai_tipo_resolucion)
+                                                                                       cai_tipo_resolucion,
+                                                                                       cai_nombre_archivo,
+                                                                                       cai_ubicacion_archivo)
                                                           VALUES   (prm_id,
                                                                     prm_acta_interv,
                                                                     TO_DATE (
@@ -2128,7 +2186,9 @@ IS
                                                                         'dd/mm/yyyy'),
                                                                     prm_tipo_not_ai,
                                                                     prm_resultado_des,
-                                                                    prm_tipo_resolucion);
+                                                                    prm_tipo_resolucion,
+                                                                    prm_nombre_archivo,
+                                                                    prm_ubicacion_archivo);
 
                                                         IF prm_tipo_grabado =
                                                                'CONCLUIR'
@@ -2215,7 +2275,9 @@ IS
                                                                                cai_fecha_not_ai,
                                                                                cai_tipo_not_ai,
                                                                                cai_resultado_des,
-                                                                               cai_tipo_resolucion)
+                                                                               cai_tipo_resolucion,
+                                                                               cai_nombre_archivo,
+                                                                               cai_ubicacion_archivo)
                                                     SELECT   prm_id,
                                                              a.cai_acta_interv,
                                                              a.cai_fecha_acta_interv,
@@ -2247,7 +2309,9 @@ IS
                                                              a.cai_fecha_not_ai,
                                                              a.cai_tipo_not_ai,
                                                              prm_resultado_des,
-                                                             prm_tipo_resolucion
+                                                             prm_tipo_resolucion,
+                                                             a.cai_nombre_archivo,
+                                                             a.cai_ubicacion_archivo
                                                       FROM   fis_con_actainter a
                                                      WHERE   ctl_control_id =
                                                                  prm_id
