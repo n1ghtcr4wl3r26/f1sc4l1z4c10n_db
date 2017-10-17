@@ -3396,7 +3396,7 @@ IS
                                AND f.alc_aduana = u.key_cuo
                                AND u.sad_reg_serial = 'C'
                                AND f.alc_numero = u.sad_reg_nber
-                               AND f.ctl_control_id = '2017250'
+                               AND f.ctl_control_id = prm_codigo
                                AND f.alc_num = 0
                                AND f.alc_lstope = 'U'
                                AND f.ctl_control_id = n.ctl_control_id
@@ -3552,7 +3552,7 @@ IS
                                AND f.alc_aduana = u.key_cuo
                                AND u.sad_reg_serial = 'C'
                                AND f.alc_numero = u.sad_reg_nber
-                               AND f.ctl_control_id = '2017250'
+                               AND f.ctl_control_id = prm_codigo
                                AND f.alc_num = 0
                                AND f.alc_lstope = 'U'
                                AND f.ctl_control_id = n.ctl_control_id
@@ -19596,7 +19596,7 @@ IS
                      AND a.ctl_cod_numero = b.ctl_cod_numero
                      AND b.ctl_num = 0
                      AND b.ctl_lstope = 'U'
-                     AND a.ctl_control_id = 20171
+                     AND a.ctl_control_id = prm_control
                      AND b.ctl_amp_correlativo IS NOT NULL
                      AND alc.alc_alcance_id = alam.alc_alcance_id
                      AND alam.ctl_control_id = b.ctl_control_id

@@ -181,7 +181,9 @@ CREATE TABLE fis_con_actainter
     cai_fecha_not_ai               DATE,
     cai_tipo_not_ai                VARCHAR2(50 BYTE),
     cai_resultado_des              VARCHAR2(50 BYTE),
-    cai_tipo_resolucion            VARCHAR2(50 BYTE))
+    cai_tipo_resolucion            VARCHAR2(50 BYTE),
+    cai_nombre_archivo             VARCHAR2(100 BYTE),
+    cai_ubicacion_archivo          VARCHAR2(100 BYTE))
   NOPARALLEL
   LOGGING
   MONITORING
@@ -206,7 +208,9 @@ CREATE TABLE fis_con_autoinicial
     cas_fecsys                     DATE,
     cas_numero_informe             VARCHAR2(30 BYTE),
     cas_fecha_informe              DATE,
-    cas_gerencia_legal             VARCHAR2(50 BYTE))
+    cas_gerencia_legal             VARCHAR2(50 BYTE),
+    cas_nombre_archivo             VARCHAR2(100 BYTE),
+    cas_ubicacion_archivo          VARCHAR2(100 BYTE))
   NOPARALLEL
   LOGGING
   MONITORING
@@ -230,7 +234,9 @@ CREATE TABLE fis_con_resadmin
     cra_rup_gestion                VARCHAR2(4 BYTE),
     cra_rup_aduana                 VARCHAR2(4 BYTE),
     cra_rup_numero                 VARCHAR2(10 BYTE),
-    cra_gerencia_legal             VARCHAR2(50 BYTE))
+    cra_gerencia_legal             VARCHAR2(50 BYTE),
+    cra_nombre_archivo             VARCHAR2(100 BYTE),
+    cra_ubicacion_archivo          VARCHAR2(100 BYTE))
   NOPARALLEL
   LOGGING
   MONITORING
@@ -245,7 +251,9 @@ CREATE TABLE fis_con_resdeter
     crd_usuario                    VARCHAR2(30 BYTE),
     crd_fecsys                     DATE,
     crd_numero_informe             VARCHAR2(30 BYTE),
-    crd_fecha_informe              DATE)
+    crd_fecha_informe              DATE,
+    crd_nombre_archivo             VARCHAR2(100 BYTE),
+    crd_ubicacion_archivo          VARCHAR2(100 BYTE))
   NOPARALLEL
   LOGGING
   MONITORING
@@ -273,7 +281,9 @@ CREATE TABLE fis_con_viscargo
     cvc_numero_vc                  VARCHAR2(30 BYTE),
     cvc_fecha_vc                   DATE,
     cvc_tipo_rd                    VARCHAR2(100 BYTE),
-    cvc_gerencia_legal             VARCHAR2(50 BYTE))
+    cvc_gerencia_legal             VARCHAR2(50 BYTE),
+    cvc_nombre_archivo             VARCHAR2(100 BYTE),
+    cvc_ubicacion_archivo          VARCHAR2(100 BYTE))
   NOPARALLEL
   LOGGING
   MONITORING
@@ -503,16 +513,16 @@ CREATE TABLE fis_info_notificacion
     inn_9                          VARCHAR2(5 BYTE),
     inn_10                         VARCHAR2(5 BYTE),
     inn_11                         VARCHAR2(5 BYTE),
-    inn_12                         VARCHAR2(500 BYTE),
-    inn_13                         VARCHAR2(500 BYTE),
-    inn_14                         VARCHAR2(500 BYTE),
-    inn_15                         VARCHAR2(500 BYTE),
-    inn_16                         VARCHAR2(500 BYTE),
-    inn_17                         VARCHAR2(500 BYTE),
-    inn_18                         VARCHAR2(500 BYTE),
-    inn_19                         VARCHAR2(500 BYTE),
-    inn_20                         VARCHAR2(500 BYTE),
-    inn_21                         VARCHAR2(500 BYTE),
+    inn_12                         VARCHAR2(501 BYTE),
+    inn_13                         VARCHAR2(501 BYTE),
+    inn_14                         VARCHAR2(501 BYTE),
+    inn_15                         VARCHAR2(501 BYTE),
+    inn_16                         VARCHAR2(501 BYTE),
+    inn_17                         VARCHAR2(501 BYTE),
+    inn_18                         VARCHAR2(501 BYTE),
+    inn_19                         VARCHAR2(501 BYTE),
+    inn_20                         VARCHAR2(501 BYTE),
+    inn_21                         VARCHAR2(501 BYTE),
     inn_num                        NUMBER(10,0),
     inn_lstope                     VARCHAR2(1 BYTE),
     inn_usuario                    VARCHAR2(30 BYTE),
@@ -555,7 +565,13 @@ CREATE TABLE fis_notificacion
     not_num                        NUMBER(10,0),
     not_lstope                     VARCHAR2(1 BYTE),
     not_usuario                    VARCHAR2(30 BYTE),
-    not_fecsys                     DATE)
+    not_fecsys                     DATE,
+    not_esapoderado                VARCHAR2(5 BYTE),
+    not_ci                         VARCHAR2(30 BYTE),
+    not_ci_exp                     VARCHAR2(5 BYTE),
+    not_nombres                    VARCHAR2(30 BYTE),
+    not_appat                      VARCHAR2(30 BYTE),
+    not_apmat                      VARCHAR2(30 BYTE))
   NOPARALLEL
   LOGGING
   MONITORING
@@ -571,6 +587,18 @@ NOPARALLEL
 LOGGING
 /
 
+
+CREATE TABLE fis_presentacion
+    (ctl_control_id                 NUMBER(18,0),
+    pre_fecha_presentacion         DATE,
+    pre_obs_presentacion           VARCHAR2(100 BYTE),
+    pre_num                        NUMBER(10,0),
+    pre_lstope                     VARCHAR2(1 BYTE),
+    pre_usuario                    VARCHAR2(30 BYTE),
+    pre_fecsys                     DATE)
+  NOPARALLEL
+  LOGGING
+/
 
 CREATE TABLE fis_recibos
     (rec_recibos_id                 NUMBER(18,0),

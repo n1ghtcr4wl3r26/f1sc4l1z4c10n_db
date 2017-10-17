@@ -26,7 +26,7 @@ IS
     FUNCTION items_control (prm_control IN VARCHAR2)
         RETURN VARCHAR2;
 
-    FUNCTION fecha_levante (prm_control IN VARCHAR2)
+    FUNCTION fecha_levantecontrol (prm_control IN VARCHAR2)
         RETURN date;
 
     FUNCTION fecha_levante (prm_sadregyear   IN VARCHAR2,
@@ -164,7 +164,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_general
-/* Formatted on 10-oct.-2017 12:25:10 (QP5 v5.126) */
+/* Formatted on 17-oct.-2017 16:33:54 (QP5 v5.126) */
 AS
     FUNCTION plazo_dias_orden (prm_control IN VARCHAR2)
         RETURN VARCHAR2
@@ -176,6 +176,7 @@ AS
         tipo             VARCHAR2 (50);
         fecha_levante    DATE;
         fecha_registro   DATE;
+        existe           NUMBER;
     BEGIN
         SELECT   a.ctl_cod_tipo
           INTO   tipo
@@ -197,21 +198,93 @@ AS
             THEN
                 RETURN '-';
             ELSE
-                fecha_levante := pkg_general.fecha_levante(prm_control);
-                IF fecha_levante IS NULL
+                fecha_levante :=
+                    pkg_general.fecha_levantecontrol (prm_control);
+
+
+                IF fecha_levante IS NOT NULL
+                   AND fecha_registro > fecha_levante
                 THEN
+                    SELECT   COUNT (1)
+                      INTO   existe
+                      FROM   fis_notificacion a
+                     WHERE       ctl_control_id = prm_control
+                             AND not_num = 0
+                             AND not_lstope = 'U';
 
-                    IF fecha_registro > fecha_levante
+                    IF existe = 0
                     THEN
-                        RETURN 'SIN MERCANCIA';
-
+                        RETURN '<span class="label label-info">Sin Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;Sin registro de fecha de Notificaci&oacute;n</span>'
+;
                     ELSE
-                        RETURN 'CON MERCANCIA';
+                        SELECT   a.not_fecha_notificacion
+                          INTO   fecreg
+                          FROM   fis_notificacion a
+                         WHERE       ctl_control_id = prm_control
+                                 AND not_num = 0
+                                 AND not_lstope = 'U';
+
+                        dif := (TRUNC (fecreg) + 40) - TRUNC (SYSDATE);
+
+                        IF dif < 0
+                        THEN
+                            RETURN '<span class="label label-danger">Sin Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;Fuera de Plazo por '
+                                   || dif * (-1)
+                                   || ' d&iacute;as</span>';
+                        ELSE
+                            IF dif < 10
+                            THEN
+                                RETURN '<span class="label label-warning">Sin Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;En Plazo, '
+                                       || dif
+                                       || ' d&iacute;as restantes</span>';
+                            ELSE
+                                RETURN '<span class="label label-success">Sin Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;En Plazo, '
+                                       || dif
+                                       || ' d&iacute;as restantes</span>';
+                            END IF;
+                        END IF;
                     END IF;
                 ELSE
-                    RETURN '-';
-                END IF;
+                    SELECT   COUNT (1)
+                      INTO   existe
+                      FROM   fis_presentacion a
+                     WHERE       ctl_control_id = prm_control
+                             AND pre_num = 0
+                             AND pre_lstope = 'U';
 
+                    IF existe = 0
+                    THEN
+                        RETURN '<span class="label label-info">Con Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;Sin registro de fecha de Presentaci&oacute;n</span>'
+;
+                    ELSE
+                        SELECT   a.pre_fecha_presentacion
+                          INTO   fecreg
+                          FROM   fis_presentacion a
+                         WHERE       ctl_control_id = prm_control
+                                 AND pre_num = 0
+                                 AND pre_lstope = 'U';
+
+                        dif := (TRUNC (fecreg) + 20) - TRUNC (SYSDATE);
+
+                        IF dif < 0
+                        THEN
+                            RETURN '<span class="label label-danger">Con Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;Fuera de Plazo por '
+                                   || dif * (-1)
+                                   || ' d&iacute;as</span>';
+                        ELSE
+                            IF dif < 10
+                            THEN
+                                RETURN '<span class="label label-warning">Con Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;En Plazo, '
+                                       || dif
+                                       || ' d&iacute;as restantes</span>';
+                            ELSE
+                                RETURN '<span class="label label-success">Con Mercanc&iacute;a:&nbsp;&nbsp;<br/>&nbsp;&nbsp;En Plazo, '
+                                       || dif
+                                       || ' d&iacute;as restantes</span>';
+                            END IF;
+                        END IF;
+                    END IF;
+                END IF;
             END IF;
         ELSE
             IF tipo = 'POSTERIOR'
@@ -239,23 +312,23 @@ AS
                     THEN
                         RETURN '-';
                     ELSE
-                        dif := TRUNC (SYSDATE) - TRUNC (fecreg) + plazo - 200;
+                        dif := (TRUNC (fecreg) + plazo) - TRUNC (SYSDATE);
 
 
-                        IF dif > 0
+                        IF dif < 0
                         THEN
                             RETURN '<span class="label label-danger">Fuera de Plazo por '
-                                   || dif
+                                   || dif * (-1)
                                    || ' d&iacute;as</span>';
                         ELSE
-                            IF dif * (-1) < 10
+                            IF dif < 10
                             THEN
                                 RETURN '<span class="label label-warning">En Plazo, '
-                                       || dif * (-1)
+                                       || dif
                                        || ' d&iacute;as restantes</span>';
                             ELSE
                                 RETURN '<span class="label label-success">En Plazo, '
-                                       || dif * (-1)
+                                       || dif
                                        || ' d&iacute;as restantes</span>';
                             END IF;
                         END IF;
@@ -501,12 +574,12 @@ AS
         RETURN res;
     END;
 
-    FUNCTION fecha_levante (prm_control IN VARCHAR2)
+    FUNCTION fecha_levantecontrol (prm_control IN VARCHAR2)
         RETURN DATE
     IS
         res   DATE;
     BEGIN
-        SELECT   TO_DATE(levante,'DD/MM/YYYY HH24:MI')
+        SELECT   TO_DATE (levante, 'dd/mm/yyyy hh24:mi:ss')
           INTO   res
           FROM   (SELECT      TO_CHAR (n.upd_dat, 'dd/mm/yyyy')
                            || ' '
@@ -563,6 +636,10 @@ AS
                            AND a.alc_lstope = 'U') tbl;
 
         RETURN res;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            RETURN NULL;
     END;
 
     FUNCTION devuelve_fecha_levante (prm_key_year   IN VARCHAR2,

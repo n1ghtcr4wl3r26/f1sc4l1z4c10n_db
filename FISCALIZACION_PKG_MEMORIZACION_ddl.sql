@@ -13205,6 +13205,11 @@ AS
             RETURN 'No se puede registrar alcance de una Fiscalizaci&oacute;n Ampliatoria';
         END IF;
 
+        IF v_tipocontrol = 'DIFERIDO'
+        THEN
+            RETURN 'No se puede registrar alcance de un Control Diferido';
+        END IF;
+
         RETURN 'CORRECTO';
     EXCEPTION
         WHEN OTHERS
@@ -13278,6 +13283,11 @@ AS
             RETURN    'No se puede registrar alcance de una fiscalizaci'
                    || CHR (243)
                    || 'n ampliatoria';
+        END IF;
+
+        IF v_tipocontrol = 'DIFERIDO'
+        THEN
+            RETURN 'No se puede registrar alcance de un Control Diferido';
         END IF;
 
         RETURN 'CORRECTO';
