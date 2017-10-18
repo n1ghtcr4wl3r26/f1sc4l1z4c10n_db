@@ -1,6 +1,6 @@
 CREATE OR REPLACE 
 PACKAGE pkg_memorizacion
-/* Formatted on 05/10/2017 16:37:26 (QP5 v5.126) */
+/* Formatted on 18/10/2017 18:32:00 (QP5 v5.126) */
 IS
     TYPE cursortype IS REF CURSOR;
 
@@ -99,6 +99,39 @@ IS
         RETURN VARCHAR2;
 
     FUNCTION graba_memorizacion_diferido (
+        prm_tipo_documento        IN VARCHAR2,
+        prm_nro_documento         IN VARCHAR2,
+        prm_fecha_documento       IN VARCHAR2,
+        prm_obs_documento         IN VARCHAR2,
+        prm_riesgo_identificado   IN VARCHAR2,
+        prm_tipo_doc_identidad    IN VARCHAR2,
+        prm_nit                   IN VARCHAR2,
+        prm_razon_social          IN VARCHAR2,
+        prm_ci                    IN VARCHAR2,
+        prm_ci_exp                IN VARCHAR2,
+        prm_nombres               IN VARCHAR2,
+        prm_appat                 IN VARCHAR2,
+        prm_apmat                 IN VARCHAR2,
+        prm_direccion             IN VARCHAR2,
+        prm_actividad_principal   IN VARCHAR2,
+        prm_usuario               IN VARCHAR2,
+        prm_tipo_operador         IN VARCHAR2,
+        prm_tribtodos             IN VARCHAR2,
+        prm_tribga                IN VARCHAR2,
+        prm_tribiva               IN VARCHAR2,
+        prm_tribice               IN VARCHAR2,
+        prm_tribiehd              IN VARCHAR2,
+        prm_tribicd               IN VARCHAR2,
+        prm_tribnoaplica          IN VARCHAR2,
+        prm_periodo               IN VARCHAR2,
+        prm_riesgodelito          IN VARCHAR2,
+        prm_riesgosubval          IN VARCHAR2,
+        prm_riesgoclas            IN VARCHAR2,
+        prm_riesgocontrab         IN VARCHAR2,
+        prm_gerencia              IN VARCHAR2)
+        RETURN VARCHAR2;
+
+    FUNCTION graba_memorizacion_dif_des (
         prm_tipo_documento        IN VARCHAR2,
         prm_nro_documento         IN VARCHAR2,
         prm_fecha_documento       IN VARCHAR2,
@@ -390,6 +423,9 @@ IS
                                   prm_usuario     VARCHAR2)
         RETURN VARCHAR2;
 
+    FUNCTION desestima_control (prm_codigo VARCHAR2, prm_gerencia VARCHAR2)
+        RETURN VARCHAR2;
+
     FUNCTION registra_control (prm_codigo                    VARCHAR2,
                                prm_gerencia                  VARCHAR2,
                                prm_usuario                   VARCHAR2,
@@ -555,7 +591,7 @@ END;
 
 CREATE OR REPLACE 
 PACKAGE BODY pkg_memorizacion
-/* Formatted on 05/10/2017 16:37:39 (QP5 v5.126) */
+/* Formatted on 18/10/2017 18:32:04 (QP5 v5.126) */
 AS
     FUNCTION bandeja_legal (prm_gerencia IN VARCHAR2, ct OUT cursortype)
         RETURN VARCHAR2
@@ -905,7 +941,8 @@ AS
                      AND a.ctl_num = 0
                      AND a.ctl_lstope = 'U'
                      AND b.ctl_control_id = a.ctl_control_id
-                     AND b.est_estado NOT IN ('MEMORIZADO', 'CONCLUIDO', 'CONCLUIDO-LEGAL')
+                     AND b.est_estado NOT IN
+                                ('MEMORIZADO', 'CONCLUIDO', 'CONCLUIDO-LEGAL')
                      AND a.ctl_cod_tipo = 'DIFERIDO'
                      AND a.ctl_control_id = c.ctl_control_id
                      AND c.alc_num = 0
@@ -984,7 +1021,8 @@ AS
                      AND a.ctl_num = 0
                      AND a.ctl_lstope = 'U'
                      AND b.ctl_control_id = a.ctl_control_id
-                     AND b.est_estado NOT IN ('MEMORIZADO', 'CONCLUIDO', 'CONCLUIDO-LEGAL')
+                     AND b.est_estado NOT IN
+                                ('MEMORIZADO', 'CONCLUIDO', 'CONCLUIDO-LEGAL')
                      AND a.ctl_cod_tipo = 'POSTERIOR'
                      AND a.ctl_control_id = f.ctl_control_id
                      AND f.fis_num = 0
@@ -2332,6 +2370,186 @@ AS
                     'U',
                     prm_usuario,
                     SYSDATE);
+
+        COMMIT;
+        RETURN 'CORRECTO' || v_gestion || v_numero;
+    EXCEPTION
+        WHEN NO_DATA_FOUND
+        THEN
+            ROLLBACK;
+            RETURN 'No se pudo memorizar el control';
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
+
+    FUNCTION graba_memorizacion_dif_des (
+        prm_tipo_documento        IN VARCHAR2,
+        prm_nro_documento         IN VARCHAR2,
+        prm_fecha_documento       IN VARCHAR2,
+        prm_obs_documento         IN VARCHAR2,
+        prm_riesgo_identificado   IN VARCHAR2,
+        prm_tipo_doc_identidad    IN VARCHAR2,
+        prm_nit                   IN VARCHAR2,
+        prm_razon_social          IN VARCHAR2,
+        prm_ci                    IN VARCHAR2,
+        prm_ci_exp                IN VARCHAR2,
+        prm_nombres               IN VARCHAR2,
+        prm_appat                 IN VARCHAR2,
+        prm_apmat                 IN VARCHAR2,
+        prm_direccion             IN VARCHAR2,
+        prm_actividad_principal   IN VARCHAR2,
+        prm_usuario               IN VARCHAR2,
+        prm_tipo_operador         IN VARCHAR2,
+        prm_tribtodos             IN VARCHAR2,
+        prm_tribga                IN VARCHAR2,
+        prm_tribiva               IN VARCHAR2,
+        prm_tribice               IN VARCHAR2,
+        prm_tribiehd              IN VARCHAR2,
+        prm_tribicd               IN VARCHAR2,
+        prm_tribnoaplica          IN VARCHAR2,
+        prm_periodo               IN VARCHAR2,
+        prm_riesgodelito          IN VARCHAR2,
+        prm_riesgosubval          IN VARCHAR2,
+        prm_riesgoclas            IN VARCHAR2,
+        prm_riesgocontrab         IN VARCHAR2,
+        prm_gerencia              IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res         VARCHAR2 (50);
+        v_gestion   VARCHAR2 (4);
+        v_numero    NUMBER;
+    BEGIN
+        IF prm_tipo_doc_identidad = 'NIT'
+        THEN
+            IF pkg_general.f_validadigitoverificador (prm_nit) = 0
+            THEN
+                RETURN    'El n&uacute;mero de NIT: '
+                       || prm_nit
+                       || ', no es v&aacute;lido';
+            END IF;
+        END IF;
+
+        --RETURN 'No se encuentra habilitado el registro de Controles Diferidos, los mismos deben realizarse en el sistema SICODIF';
+        /* IF     prm_riesgodelito IS NULL
+            AND prm_riesgosubval IS NULL
+            AND prm_riesgoclas IS NULL
+            AND prm_riesgocontrab IS NULL
+         THEN
+             RETURN 'Debe seleccionar por lo menos un riesgo identificado';
+         END IF;*/
+
+        IF     prm_tribga IS NULL
+           AND prm_tribiva IS NULL
+           AND prm_tribice IS NULL
+           AND prm_tribiehd IS NULL
+           AND prm_tribicd IS NULL
+        THEN
+            IF prm_tribnoaplica IS NULL
+            THEN
+                RETURN 'Si no desea seleccionar ning&uacute;n tributo a fiscalizar, debe marcar la casilla de no aplica'
+;
+            END IF;
+        ELSE
+            IF NOT prm_tribnoaplica IS NULL
+            THEN
+                RETURN 'Si seleccion&oacute; uno de los tributos a fiscalizar, no debe marcar la casilla de no aplica'
+;
+            END IF;
+        END IF;
+
+        v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+        v_numero := numero_control (v_gestion);
+
+        INSERT INTO fis_control (ctl_control_id,
+                                 ctl_cod_tipo,
+                                 ctl_tipo_documento,
+                                 ctl_nro_documento,
+                                 ctl_fecha_documento,
+                                 ctl_obs_documento,
+                                 ctl_riesgo_identificado,
+                                 ctl_tipo_doc_identidad,
+                                 ctl_nit,
+                                 ctl_razon_social,
+                                 ctl_ci,
+                                 ctl_ci_exp,
+                                 ctl_nombres,
+                                 ctl_appat,
+                                 ctl_apmat,
+                                 ctl_direccion,
+                                 ctl_actividad_principal,
+                                 ctl_num,
+                                 ctl_lstope,
+                                 ctl_usuario,
+                                 ctl_fecsys,
+                                 ctl_tipo_operador,
+                                 ctl_tribtodos,
+                                 ctl_tribga,
+                                 ctl_tribiva,
+                                 ctl_tribice,
+                                 ctl_tribiehd,
+                                 ctl_tribicd,
+                                 ctl_tribnoaplica,
+                                 ctl_periodo,
+                                 ctl_riesgodelito,
+                                 ctl_riesgosubval,
+                                 ctl_riesgoclas,
+                                 ctl_riesgocontrab,
+                                 ctl_cod_gerencia)
+          VALUES   (v_gestion || v_numero,
+                    'DIFERIDO',
+                    prm_tipo_documento,
+                    prm_nro_documento,
+                    TO_DATE (prm_fecha_documento, 'dd/mm/yyyy'),
+                    prm_obs_documento,
+                    prm_riesgo_identificado,
+                    prm_tipo_doc_identidad,
+                    prm_nit,
+                    prm_razon_social,
+                    prm_ci,
+                    prm_ci_exp,
+                    prm_nombres,
+                    prm_appat,
+                    prm_apmat,
+                    prm_direccion,
+                    prm_actividad_principal,
+                    0,
+                    'U',
+                    prm_usuario,
+                    SYSDATE,
+                    prm_tipo_operador,
+                    prm_tribtodos,
+                    prm_tribga,
+                    prm_tribiva,
+                    prm_tribice,
+                    prm_tribiehd,
+                    prm_tribicd,
+                    prm_tribnoaplica,
+                    prm_periodo,
+                    prm_riesgodelito,
+                    prm_riesgosubval,
+                    prm_riesgoclas,
+                    prm_riesgocontrab,
+                    prm_gerencia);
+
+
+
+        INSERT INTO fis_estado (ctl_control_id,
+                                est_estado,
+                                est_num,
+                                est_lstope,
+                                est_usuario,
+                                est_fecsys)
+          VALUES   (v_gestion || v_numero,
+                    'MEMORIZADO',
+                    0,
+                    'U',
+                    prm_usuario,
+                    SYSDATE);
+
+
 
         COMMIT;
         RETURN 'CORRECTO' || v_gestion || v_numero;
@@ -13893,6 +14111,184 @@ AS
                 || v_numeroamp;
             RETURN res;
         END IF;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            ROLLBACK;
+            RETURN 'ERROR'
+                   || SUBSTR (TO_CHAR (SQLCODE) || ': ' || SQLERRM, 1, 255);
+    END;
+
+    FUNCTION desestima_control (prm_codigo VARCHAR2, prm_gerencia VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        res              VARCHAR2 (300) := 0;
+        v_gestion        VARCHAR2 (4);
+        v_numero         NUMBER;
+        v_numeroinfo     NUMBER;
+        v_numeroamp      VARCHAR2 (15);
+        val              VARCHAR2 (100);
+        cad              VARCHAR2 (30000);
+        v_key_year       VARCHAR2 (4);
+        v_key_cou        VARCHAR2 (3);
+        v_reg_nber       VARCHAR2 (10);
+        existe           NUMBER;
+        error_dui        VARCHAR2 (30000) := '';
+        total            NUMBER := 0;
+        grabadas         NUMBER := 0;
+        v_tipo           VARCHAR2 (30);
+        v_tipocontrol    VARCHAR2 (30);
+        v_codigofisca    VARCHAR2 (100);
+        v_fiscalizador   VARCHAR2 (30);
+        v_usuario        VARCHAR2 (30);
+        v_gerencia       VARCHAR2 (30);
+    BEGIN
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_estado a
+         WHERE   a.ctl_control_id = prm_codigo;
+
+
+        SELECT   prm_gerencia, ctl_usuario
+          INTO   v_gerencia, v_usuario
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+
+        UPDATE   fis_estado
+           SET   est_num = existe
+         WHERE   ctl_control_id = prm_codigo AND est_num = 0;
+
+        INSERT INTO fis_estado (ctl_control_id,
+                                est_estado,
+                                est_num,
+                                est_lstope,
+                                est_usuario,
+                                est_fecsys)
+          VALUES   (prm_codigo,
+                    'DESESTIMADO',
+                    0,
+                    'U',
+                    v_usuario,
+                    SYSDATE);
+
+
+        SELECT   a.ctl_cod_tipo
+          INTO   v_tipo
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+        v_gestion := TO_CHAR (SYSDATE, 'yyyy');
+        v_numero := numero_control_gen (v_gestion, v_tipo, v_gerencia);
+
+
+        SELECT   COUNT (1)
+          INTO   existe
+          FROM   fis_control a
+         WHERE   a.ctl_control_id = prm_codigo;
+
+        UPDATE   fis_control
+           SET   ctl_num = existe
+         WHERE   ctl_control_id = prm_codigo AND ctl_num = 0;
+
+        INSERT INTO fis_control
+            SELECT   a.ctl_control_id,
+                     v_gestion,
+                     a.ctl_cod_tipo,
+                     a.ctl_cod_gerencia,
+                     v_numero,
+                     a.ctl_tipo_documento,
+                     a.ctl_nro_documento,
+                     a.ctl_fecha_documento,
+                     a.ctl_obs_documento,
+                     a.ctl_riesgo_identificado,
+                     a.ctl_tipo_doc_identidad,
+                     a.ctl_nit,
+                     a.ctl_razon_social,
+                     a.ctl_ci,
+                     a.ctl_ci_exp,
+                     a.ctl_nombres,
+                     a.ctl_appat,
+                     a.ctl_apmat,
+                     a.ctl_direccion,
+                     a.ctl_actividad_principal,
+                     a.ctl_amp_correlativo,
+                     0,
+                     'U',
+                     a.ctl_usuario,
+                     SYSDATE,
+                     a.ctl_tipo_operador,
+                     a.ctl_tribtodos,
+                     a.ctl_tribga,
+                     a.ctl_tribiva,
+                     a.ctl_tribice,
+                     a.ctl_tribiehd,
+                     a.ctl_tribicd,
+                     a.ctl_tribnoaplica,
+                     a.ctl_periodo,
+                     a.ctl_riesgodelito,
+                     a.ctl_riesgosubval,
+                     a.ctl_riesgoclas,
+                     a.ctl_riesgocontrab,
+                     a.ctl_amp_control,
+                     v_gestion
+              FROM   fis_control a
+             WHERE       ctl_control_id = prm_codigo
+                     AND ctl_num = existe
+                     AND ROWNUM = 1;
+
+
+        SELECT   a.ctl_cod_gestion
+                 || DECODE (a.ctl_cod_tipo,
+                            'DIFERIDO', 'CD',
+                            'POSTERIOR', 'FP',
+                            'AMPLIATORIA DIFERIDO', 'CD',
+                            'AMPLIATORIA POSTERIOR', 'FP',
+                            '-')
+                 || a.ctl_cod_gerencia
+                 || DECODE (
+                        a.ctl_amp_correlativo,
+                        NULL,
+                        '00',
+                        DECODE (LENGTH (a.ctl_amp_correlativo),
+                                1, '0' || a.ctl_amp_correlativo,
+                                a.ctl_amp_correlativo))
+                 || DECODE (LENGTH (a.ctl_cod_numero),
+                            1, '0000' || a.ctl_cod_numero,
+                            2, '000' || a.ctl_cod_numero,
+                            3, '00' || a.ctl_cod_numero,
+                            4, '0' || a.ctl_cod_numero,
+                            a.ctl_cod_numero)
+          INTO   v_codigofisca
+          FROM   fis_control a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND a.ctl_num = 0
+                 AND a.ctl_lstope = 'U';
+
+
+        COMMIT;
+
+
+        SELECT   a.alc_gestion, a.alc_aduana, a.alc_numero
+          INTO   v_key_year, v_key_cou, v_reg_nber
+          FROM   fis_alcance a
+         WHERE       a.ctl_control_id = prm_codigo
+                 AND alc_num = 0
+                 AND alc_lstope = 'U';
+
+
+        mira.pkg_fisca.graba_mira_fis (v_key_year,
+                                       v_key_cou,
+                                       v_reg_nber,
+                                       'DESESTIMAR',
+                                       v_usuario,
+                                       'DESESTIMADO POR FISAP',
+                                       v_usuario);
+        RETURN v_codigofisca;
     EXCEPTION
         WHEN OTHERS
         THEN
